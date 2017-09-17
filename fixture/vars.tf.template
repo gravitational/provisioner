@@ -1,0 +1,115 @@
+// these variables are loaded from
+// existing AWS environment and VPC
+data "aws_ami" "base" {
+  most_recent = true
+  owners = ["self"]
+  filter {
+    name = "name"
+    values = ["centos-7-k8s-base-ami *"]
+  }
+}
+
+provider "aws" {
+  region      = "{{.variables.aws.region}}"
+  shared_credentials_file = "/var/lib/telekube/aws-credentials"
+  profile                 = "default"
+  max_retries = 5
+}
+
+{{ if .variables.aws.vpc_id -}}
+
+variable "vpc_id" {
+  default = "{{.variables.aws.vpc_id}}"
+}
+
+variable "internet_gateway_id" {
+  default = "{{.variables.aws.internet_gateway_id}}"
+}
+
+variable "nat_gateways" {
+  default = [{{$c := counter}}{{range $gateway_id := .variables.aws.nat_gateways}}{{if call $c}}, {{end}}"{{$gateway_id}}"{{end}}]
+}
+
+variable "azs" {
+   default = [{{$c := counter}}{{range $idx, $az := .variables.aws.azs}}{{if call $c}}, {{end}}"{{$az}}"{{end}}]
+}
+
+variable "subnets" {
+   default = [{{$c := counter}}{{range $idx, $subnet := .variables.aws.subnets}}{{if call $c}}, {{end}}"{{$subnet}}"{{end}}]
+}
+
+variable "public_subnets" {
+   default = [{{$c := counter}}{{range $idx, $subnet := .variables.aws.public_subnets}}{{if call $c}}, {{end}}"{{$subnet}}"{{end}}]
+}
+{{- else -}}
+
+variable "vpc_cidr" {
+  default = "{{.variables.aws.vpc_cidr}}"
+}
+
+variable "vpc_id" {
+  default = ""
+}
+
+variable "internet_gateway_id" {
+  default = ""
+}
+
+// Generate a same length array with azs. We don't need this value when
+// creating VPC. However, terraform still needs a reference to the variable
+// even the value is not being used so we set it to an array of empty
+// string
+variable "nat_gateways" {
+  default = [{{$c := counter}}{{range $idx := .variables.aws.azs}}{{if call $c}}, {{end}}""{{end}}]
+}
+
+variable "azs" {
+   default = [{{$c := counter}}{{range $idx, $az := .variables.aws.azs}}{{if call $c}}, {{end}}"{{$az}}"{{end}}]
+}
+
+variable "subnets" {
+   default = [{{$c := counter}}{{range $idx, $subnet := .variables.aws.subnets}}{{if call $c}}, {{end}}"{{$subnet}}"{{end}}]
+}
+
+variable "public_subnets" {
+   default = [{{$c := counter}}{{range $idx, $subnet := .variables.aws.public_subnets}}{{if call $c}}, {{end}}"{{$subnet}}"{{end}}]
+}
+
+
+resource "aws_vpc" "kubernetes" {
+  cidr_block            = "{{.variables.aws.vpc_cidr}}"
+  enable_dns_support    = true
+  enable_dns_hostnames  = true
+
+  tags {
+    KubernetesCluster = "${var.cluster_name}"
+    Name              = "${var.cluster_name}"
+  }
+}
+
+
+resource "aws_eip" "nat" {
+  count = "${length(var.azs)}"
+  vpc   = true
+}
+
+
+resource "aws_internet_gateway" "kubernetes" {
+  vpc_id = "{{or .variables.aws.vpc_id "${aws_vpc.kubernetes.id}"}}"
+
+  tags {
+    KubernetesCluster = "${var.cluster_name}"
+    Name              = "${var.cluster_name}"
+  }
+}
+
+
+resource "aws_nat_gateway" "kubernetes" {
+  count         = "${length(var.azs)}"
+  allocation_id = "${element(aws_eip.nat.*.id, count.index)}"
+  subnet_id     = "${element(aws_subnet.public.*.id, count.index)}"
+  depends_on = ["aws_subnet.public", "aws_internet_gateway.kubernetes"]
+}
+{{- end -}}
+
+{{- template "cluster" . }}
