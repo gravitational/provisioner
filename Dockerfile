@@ -1,6 +1,6 @@
 FROM quay.io/gravitational/debian-grande:0.0.1
 
-# What TerraFOrm version to install
+# What Terraform version to install
 ARG TERRAFORM_VER
 
 RUN ( \
@@ -14,10 +14,10 @@ RUN ( cd /usr/local/bin && \
      unzip terraform_${TERRAFORM_VER}_linux_amd64.zip && \
      rm -f terraform_${TERRAFORM_VER}_linux_amd64.zip )
 
-# bundle Make and TerraForm
+# bundle Makefile and Terraform
 ADD scripts /usr/local/bin/provisioner
 
-# Add the  binary of this repo
+# bundle the main provisioner program
 ADD build/provisioner /usr/local/bin/inspect
 
 # By setting this entry point, we expose make target as command

@@ -8,12 +8,12 @@ import (
 
 const (
 	// the default CIDR for generated VPC.
-	// This can be override with TF_VAR_vpc_cidr
+	// This can be overridden with TF_VAR_vpc_cidr
 	// Please refer to ../scripts/terraform/templates/vars.tf.template
 	defaultCIDR = "10.1.0.0/16"
 )
 
-// EC2Service is an interface has capability to query EC2 service
+// EC2Service defines an interface to EC2
 type EC2Service interface {
 	DescribeAvailabilityZones(*ec2.DescribeAvailabilityZonesInput) (*ec2.DescribeAvailabilityZonesOutput, error)
 	DescribeAvailabilityZonesRequest(*ec2.DescribeAvailabilityZonesInput) (*request.Request, *ec2.DescribeAvailabilityZonesOutput)
@@ -33,7 +33,7 @@ type VPC struct {
 	Subnets           []string
 }
 
-//NewVPC initialize a VPC configuration(cidr, subnet, availability zones)
+//NewVPC initializes a VPC configuration(cidr, subnet, availability zones)
 func NewVPC(svc EC2Service, region string) (*VPC, error) {
 	vpc := VPC{
 		CIDR:   defaultCIDR,

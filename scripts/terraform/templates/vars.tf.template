@@ -9,11 +9,15 @@ data "aws_ami" "base" {
   }
 }
 
+variable "aws_max_retries" {
+  default = 5
+}
+
 provider "aws" {
   region      = "{{.variables.aws.region}}"
   shared_credentials_file = "/var/lib/telekube/aws-credentials"
   profile                 = "default"
-  max_retries = 5
+  max_retries = ${var.aws_max_retries}
 }
 
 {{if .variables.aws.vpc_id}}

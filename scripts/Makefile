@@ -68,8 +68,6 @@ echo:
 	@echo "Node profiles:       $(TELEKUBE_NODE_PROFILES)"
 	@echo "Node count:          $(TELEKUBE_NODE_PROFILE_COUNT_node)"
 	@echo "Node instance type:  $(TELEKUBE_NODE_PROFILE_INSTANCE_TYPE_node)"
-	@echo "Node count:          $(TELEKUBE_NODE_PROFILE_COUNT_node)"
-	@echo "Node instance type:  $(TELEKUBE_NODE_PROFILE_INSTANCE_TYPE_node)"
 
 #
 # echo prints all variables excluding secrets
@@ -210,14 +208,14 @@ terraform-plan:
 	cd '/mnt/state/cluster' && terraform plan
 
 #
-# terraform-apply applies
+# terraform-apply updates the existing infrastructure
 #
 .PHONY: terraform-apply
 terraform-apply:
 	cd '/mnt/state/cluster' && terraform apply
 
 #
-# terraform-destroy destroys
+# terraform-destroy destroys the provisioned cluster
 #
 .PHONY: terraform-destroy
 terraform-destroy:

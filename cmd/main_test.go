@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-// mockRunner structs store invoked parameters
+// mockRunner implements a Runner and stores the parameters it was invoked with
 type mockRunner struct {
 	Args []string
 }
@@ -27,8 +27,8 @@ type MainSuite struct{}
 
 var _ = Suite(&MainSuite{})
 
-// Test Parse correct parameters
-func (s *MainSuite) TestMainGetParameterFromSecondElement(c *C) {
+// Test parse correct parameters
+func (s *MainSuite) TestParseCliArgument(c *C) {
 	m := &mockRunner{}
 	getCommand = func() provisioner.CommandRunner {
 		return m
@@ -40,7 +40,7 @@ func (s *MainSuite) TestMainGetParameterFromSecondElement(c *C) {
 	c.Assert(m.Args, DeepEquals, []string{"second", "third"})
 }
 
-// Test build command struct
+// Test building command struct
 func (s *MainSuite) TestCreateCommand(c *C) {
 	command := getCommand().(*provisioner.Command)
 	c.Assert(command.App.Name, Equals, "provisioner", Commentf("Command name is incorrect"))

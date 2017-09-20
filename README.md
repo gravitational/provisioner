@@ -3,24 +3,25 @@ Terraform based provisioners for ops center
 
 # Overview
 
-Provisioner include two components:
+Provisioner includes two components:
 
 - an executable binary to generate terraform script
-- a docker image bundles above binary and makefile expose set of tasks
   to provision cluster
+- a docker image bundling the above binary and a makefile exposing a set
+  of tasks to provision a cluster
 
-The docker image is the final package to be deploy and executed with
+The docker image is the final package to be deployed and executed as a
 kubernetes job to create VPC. The docker entrypoint is set to **Make**
 so you can invoke any make target by passing command when executing with
 docker run.
 
-Provisioner works by generating necessary Terraform script and apply
-those Terraform script. The script also sync to a S3 bucket. And re-sync
-from S3 to local whenever it is called again, such as when destroying
-cluster.
+Provisioner works by generating a Terraform script and then applying the
+generated script to create or modify resources.
+The script will also (re)sync the configuration with an S3 bucket
+whenever it is called.
 
 Provisioner can run standalone, however, its main usage is to be
-integrate with Telekube application hook to create/reuse VPC and launch
+integrated with Telekube application hook to create/reuse VPC and launch
 instance into the VPC.
 
 Provisioner works in two modes:
@@ -30,39 +31,38 @@ Provisioner works in two modes:
 
 ## Existing VPC
 
-In this mode, provisioner reads VPC configuration and reuse NAT gateway,
+In this mode, provisioner reads VPC configuration and reuses NAT gateway,
 internet gateway. The generated Terraform will contain new resources for
-subnets, security groups. The amount of pair of private/public subnet is
-equal the amout of NAT gateways of the existing VPC. The subnet CIDR is
-calculated and will not of couse not overlap with any existing subnets in VPC.
+subnets, security groups. The number of private/public subnet pairs will be
+equal to the number of NAT gateways in the existing VPC. The subnet CIDR is
+calculated to not overlap with any existing subnets in the same VPC.
 
 ## Creating a new VPC
 
-In this mode, provisioner simply generates TerraForm script with all new
-resource to create a VPC:
+Here provisioner generates a Terraform script to create a VPC from scratch:
 
   - NAT gateway and its Elastic IP respectively
   - Internet gateway and its Elastic IP respectively
-  - Subnets:Private and Public and their route tables respectively
+  - Subnets: public and private and their route tables respectively
 
-Provisioner creates subnet on all availability zone of region, and runs
-a NAT gateway on each availability zone.
+Provisioner creates subnets in all availability zones in the given region and
+runs a NAT gateway on each availability zone.
 
-## Environment variable
+## Environment variables
 
-Please refer to `scripts/Makefile` for a list of available environment variable.
-Below are required variable for all tasks:
+Please refer to `scripts/Makefile` for a list of available environment variables.
+Below are required variables for all tasks:
 
 * AWS_REGION: aws region of S3 bucket to store Terraform script and
   state.
 * AWS_ACCESS_KEY_ID: aws access key id
 * AWS_SECRET_ACCESS_KEY: aws secret key
 * TELEKUBE_CLUSTER_NAME: telekube cluster. We will store generated
-  script into an bucket in form of **terraform-cluster-state-$(TELEKUBE_CLUSTER_NAME)**
-* AWS_KEY_NAME: SSH key for ec2 instance. The SSH Key needs to be
+  script in a bucket in form of **terraform-cluster-state-$(TELEKUBE_CLUSTER_NAME)**
+* AWS_KEY_NAME: SSH key for ec2 instance. The SSH key needs to be
   pre-created in AWS
 * TELEKUBE_OPS_TOKEN: an agent token of telekube cluster
-* TELEKUBE_NODE_PROFILE_COUNT_node: how many node
+* TELEKUBE_NODE_PROFILE_COUNT_node: how many nodes
 * TELEKUBE_NODE_PROFILE_INSTANCE_TYPE_node: node instance type
 
 ## Usage
@@ -104,39 +104,39 @@ hook](http://gravitational.com/docs/pack/#application-hooks)
 Provisioner image has 4 main tasks:
 
 * cluster-provision: Generate Terraform script, sync this script to S3, then
-	combine this with other static Terraform template and execute to form a cluster
+	combine this with other static Terraform templates and execute to form a cluster
   and its instance. Environment variables:
 
-    * AWS_VPC_ID: existing VPC ID, if empty will create a new vpc
+    * AWS_VPC_ID: existing VPC ID. If empty, a new VPC is created
 
 * cluster-deprovision: Sync the generated Terraform before back from S3,
   then execute to destroy the whole cluster.
 * nodes-provision: Do same thing as cluster-provision.
-* nodes-deprovision: Remove an instance which is referenced from
-  environment variable `AWS_INSTANCE_PRIVATE_IP`.
+* nodes-deprovision: Remove an instance referenced in the environment
+  variable `AWS_INSTANCE_PRIVATE_IP`.
 
 ## Customize Terraform script
 
-We can customize Terraform script in `scripts/terraform/templates`. It's
-basically a Golang template for Terraform. Below are list of variable we
-can use:
+We can customize Terraform script in `scripts/terraform/templates` which
+are written as Go templates. Below is the list of variables that can be
+used to override the templates:
 
 * variables: a map with this only member
 
   * aws: a map with below member
 
-    * subnets: an array of string of subnets CIDR
+    * subnets: an array of subnet CIDRs as strings
     * public_subnets: an array of string of public subnets CIDR
-    * region: aws region the VPC belongs to
-    * vpc_id: vpc id, can be empty depend on what we pass
+    * region: AWS region the VPC belongs to
+    * vpc_id: VPC id, can be empty  if the new VPC is to be created
     * internet_gateway_id: internet gateway id, can be empty when not
       passing VPC ID
-    * nat_gateways: an array of string of NAT gateway on each of
+    * nat_gateways: an array of NAT gateway as strings on each of
       availabity zone, can be empty when not passing VPC ID
-    * azs: an array of string of availability zone
+    * azs: an array of string of availability zones
 
-Once we make change to Terraform, we also need to rebuild the image and
-publish it to Quay registry.
+If changes are made to the Terraform script, the docker image needs to
+be rebuilt and published to the quay.io repository.
 
 ## Development
 
@@ -156,8 +156,9 @@ make test
 
 ### Manually testing
 
-It's useful to invoke manually testing during development. We can easily
-do that by create a list of enviroment in a file says `dev.env`:
+It is recommended to run manual tests during development. It is easier
+if you collect the necessary environment variables into a file named
+`dev.env`:
 
 ```
 AWS_REGION=xxx
@@ -172,7 +173,7 @@ TELEKUBE_CLUSTER_NAME=xxx
 TELEKUBE_OPS_TOKEN=xxx
 ```
 
-and manually invoke them with docker:
+then pass it to docker:
 
 ```
 docker run --rm -it \

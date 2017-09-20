@@ -1,13 +1,14 @@
 // Package main provides main binary to generate Terraform script or inspect
-// and intereact with EC2/S3 state.
+// and intereacts with EC2/S3 state.
 package main
 
 import (
+	"log"
+	"os"
+
 	"github.com/gravitational/provisioner"
 	"github.com/gravitational/trace"
 	"gopkg.in/alecthomas/kingpin.v2"
-	"log"
-	"os"
 )
 
 // Define this in a variable to make it testable

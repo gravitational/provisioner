@@ -52,5 +52,5 @@ func (s *VPCSuite) TestGenVars(c *C) {
 		},
 	}
 
-	c.Assert(genVariables, DeepEquals, expected, Commentf("Generated variables is in correct"))
+	c.Assert(genVariables, DeepEquals, expected, Commentf("Generated variables is incorrect"))
 }

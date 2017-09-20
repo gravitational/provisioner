@@ -6,7 +6,7 @@ import (
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
-// initVarsCmd holds kingpin and its argument in same struct
+// initVarsCmd groups the top-level command for initializing the variables and its arguments
 type initVarsCmd struct {
 	*kingpin.CmdClause
 	varsKey *string
@@ -25,7 +25,7 @@ func (cmd *initVarsCmd) perform(cfg LoaderConfig) error {
 	return nil
 }
 
-// syncFilesCmd holds kingpin and its argument in same struct
+// syncFilesCmd groups the top-level command for syncing file and its arguments
 type syncFilesCmd struct {
 	*kingpin.CmdClause
 	paths     []string
@@ -41,7 +41,7 @@ func (cmd *syncFilesCmd) perform(cfg LoaderConfig) error {
 	return loader.sync(cmd.paths, cmd.targetDir)
 }
 
-// findInstanceCmd holds kingpin and its argument in same struct
+// findInstanceCmd groups the top-level command for finding instance by private ip and its arguments
 type findInstanceCmd struct {
 	*kingpin.CmdClause
 	findPrivateIP string
@@ -57,7 +57,7 @@ func (cmd *findInstanceCmd) perform(cfg LoaderConfig) error {
 	return nil
 }
 
-// removeS3KeyCmd holds kingpin and its argument in same struct
+// removeS3KeyCmd groups the top-level command for removing S3 keys and its arguments
 type removeS3KeyCmd struct {
 	*kingpin.CmdClause
 	rmKey string
@@ -153,7 +153,7 @@ func LoadCommands(app *kingpin.Application, cfg *LoaderConfig) *Command {
 	return &c
 }
 
-// Run parses an array of input and run command map to it
+// Run parses CLI argument and execute sub-command
 func (c *Command) Run(args []string) error {
 	invokedCommad, err := c.App.Parse(args)
 

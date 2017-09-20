@@ -4,32 +4,30 @@ CWD := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 VENDORBIN = $(CURDIR)/vendor/bin
 PATH     := $(VENDORBIN):$(PATH)
 
-PROV_VERSION ?= 0.0.3
+PROV_VERSION ?= $(shell git describe --tags 2>/dev/null ||  git rev-parse HEAD)
 PROV_REPO = quay.io/gravitational/provisioner
 TERRAFORM_VER ?= 0.9.4
 BUILDBOX_TAG ?= golang:1.9.0-stretch
 
+# Build docker image
 .PHONY: build-provisioner
 build-provisioner: build
 	docker build \
            --build-arg=TERRAFORM_VER=$(TERRAFORM_VER) \
            -t "$(PROV_REPO):$(PROV_VERSION)" .
 
+# Publish docker image. User runs this has to have Quay write permission
 .PHONY: publish-provisioner
 publish-provisioner:
 	docker push $(PROV_REPO):$(PROV_VERSION)
 
-.PHONY:deps
+.PHONY: deps
 deps: vendor
 
 vendor: Gopkg.lock
-	test -e "$(VENDORBIN)/dep" >/dev/null 2>&1 || GOBIN="$(VENDORBIN)" go get -u github.com/golang/dep/cmd/dep
 	dep ensure
-	# Need to do this again because ensure will remove it
-	test -e "$(VENDORBIN)/dep" >/dev/null 2>&1 || GOBIN="$(VENDORBIN)" go get -u github.com/golang/dep/cmd/dep
-	touch -r $< vendor
 
-# inspect builds inspect program inside Docker container
+# builds privisioner program inside Docker container
 .PHONY: build
 build: deps
 	mkdir -p $(CWD)/build

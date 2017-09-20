@@ -21,7 +21,7 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// Loader governs process of inspecting VPC and generate TerraForm template
+// Loader governs process of inspecting VPC and generating TerraForm template
 // We support 2 modes of loading
 //   * load with an existing VPC: in this case, we will re-use nat gateway,
 //     internet gateway, only subnet and security group will be created
@@ -60,8 +60,9 @@ func NewLoader(config LoaderConfig) (*Loader, error) {
 	}, nil
 }
 
-// loadTemplate loads terraform file in Go lang template to generate final
-// terraform script depending on creating a new VPC or using an existing VPC
+// loadTemplate loads a Terraform template from a file into an instance of
+// template.Template to generate the final script depending on creating a new
+// VPC or using an existing VPC
 func (l *Loader) loadTemplate() (*template.Template, error) {
 	out, err := ioutil.ReadFile(l.TemplatePath)
 	if err != nil {
@@ -190,7 +191,7 @@ func (l *Loader) load() ([]byte, error) {
 	return buf.Bytes(), nil
 }
 
-// counters is a helper counting func for Go template
+// counter is a template helper function to generate an increasing counter starting from 0
 func counter() func() int {
 	i := -1
 	return func() int {
@@ -218,7 +219,7 @@ func (l *Loader) loadRegion(az string) (string, error) {
 	if len(out.AvailabilityZones) == 0 {
 		return "", trace.NotFound("no AZ with name %v found", az)
 	}
-	return *(out.AvailabilityZones[0].RegionName), nil
+	return aws.StringValue(out.AvailabilityZones[0].RegionName), nil
 }
 
 // loadSubnets fetchs ec2.Subnet struct with a given array of subnet id
@@ -257,7 +258,7 @@ func (l *Loader) computeSubnetRanges(count int) ([]string, []string, error) {
 	if err != nil {
 		return nil, nil, trace.Wrap(err)
 	}
-	log.Debugf("vpc %v subnet: %v", vpc)
+	log.Debugf("vpc %v subnet: %v", vpc, count)
 	subnets, err := l.loadAllSubnets()
 	if err != nil {
 		return nil, nil, trace.Wrap(err)
@@ -281,7 +282,7 @@ func (l *Loader) computeSubnetRanges(count int) ([]string, []string, error) {
 	return out[:len(out)/2], out[len(out)/2:], nil
 }
 
-// loadNatGateways finds all nat gateway in current vpc
+// loadNatGateways finds all NAT gateways in current vpc
 func (l *Loader) loadNatGateways() ([]*ec2.NatGateway, error) {
 	params := &ec2.DescribeNatGatewaysInput{
 		Filter: []*ec2.Filter{
@@ -421,7 +422,7 @@ func (l *Loader) initVars(bucketKey string) error {
 		return nil
 	}
 	if !trace.IsNotFound(err) {
-		return trace.Wrap(err, "failed to load key: %v")
+		return trace.Wrap(err, "failed to load key: %v", bucketKey)
 	}
 	log.Printf("key is not found, going to generate data from AWS")
 	data, err = l.load()
@@ -480,7 +481,14 @@ func (l *Loader) rm(key string) error {
 	return awsutil.ConvertS3Error(err)
 }
 
-// findInstance finds instance resource in terraform show output based on AWS private IP
+// findInstance finds Terraform resource id for an EC2 instance from Terraform
+// output using instance private ip.
+// An use case is we want to remove a specificed instance. If we simply change
+// count value in Terraform, we will not sure which instance will be removed.
+// By mapping private ip and its associated Terraform resource id in
+//   `terraform show`
+// We can then remove exactly that instance by executing
+//   `terraform destroy --target=resource-id`
 func findInstance(privateIP string, stdin *os.File) (string, error) {
 	if privateIP == "" {
 		return "", trace.BadParameter("private ip can not be empty")
@@ -490,18 +498,14 @@ func findInstance(privateIP string, stdin *os.File) (string, error) {
 		stdin = os.Stdin
 	}
 
-	reader := bufio.NewReader(stdin)
+	scanner := bufio.NewScanner(stdin)
 	var resourceName string
 	expr, err := regexp.Compile(fmt.Sprintf(`\s*private_ip\s*=\s*%v\s*`, privateIP))
 	if err != nil {
 		return "", trace.Wrap(err)
 	}
-	for {
-		line, err := reader.ReadString('\n')
-		if err != nil {
-			return "", trace.NotFound("instance with ip %v not found", privateIP)
-		}
-		line = strings.TrimSpace(line)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
 		if strings.HasPrefix(line, "aws_instance.") {
 			resourceName = strings.TrimSuffix(line, ":")
 			parts := strings.Split(resourceName, ".")
@@ -512,4 +516,6 @@ func findInstance(privateIP string, stdin *os.File) (string, error) {
 			return resourceName, nil
 		}
 	}
+
+	return "", trace.NotFound("instance with ip %v not found", privateIP)
 }
