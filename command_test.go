@@ -7,11 +7,13 @@ import (
 )
 
 // Hook up gocheck into the "go test" runner.
-func TestCommand(t *testing.T) { TestingT(t) }
+func TestProvisioner(t *testing.T) { TestingT(t) }
 
-type CommandSuite struct{}
+type ProvisionerSuite struct{}
 
-func (s *CommandSuite) TestLoadCommand(c *C) {
+var _ = Suite(&ProvisionerSuite{})
+
+func (s *ProvisionerSuite) TestLoadCommand(c *C) {
 	var cfg LoaderConfig
 	app := kingpin.New("provisioner", "Terraform based provisioners for ops center")
 

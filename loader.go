@@ -357,7 +357,7 @@ func (l *Loader) UpsertBucket() error {
 		ACL:    aws.String("private"),
 	}
 	_, err := l.CreateBucket(input)
-	err = awsutil.ConvertS3Error(err)
+	err = awsutil.ConvertS3Error(err, "bucket %s is already exists", aws.String(l.ClusterBucket))
 	if err != nil {
 		if !trace.IsAlreadyExists(err) {
 			return err
@@ -370,7 +370,7 @@ func (l *Loader) UpsertBucket() error {
 		},
 	}
 	_, err = l.PutBucketVersioning(ver)
-	err = awsutil.ConvertS3Error(err)
+	err = awsutil.ConvertS3Error(err, "failed to set versioning state for bucket %s", aws.String(l.ClusterBucket))
 	if err != nil {
 		return err
 	}
@@ -406,7 +406,7 @@ func (l *Loader) PutKey(bucketName, bucketKey string, out io.ReadSeeker, content
 	}
 	_, err := l.PutObject(params)
 	if err != nil {
-		return awsutil.ConvertS3Error(err)
+		return awsutil.ConvertS3Error(err, "failed to write key %s to bucket %s", bucketKey, bucketName)
 	}
 	return nil
 }
@@ -478,13 +478,17 @@ func (l *Loader) rm(key string) error {
 	if err == nil {
 		log.Printf("removed key s3://%v/%v", l.ClusterBucket, key)
 	}
-	return awsutil.ConvertS3Error(err)
+	return awsutil.ConvertS3Error(err, "failed to remove key %s", key)
 }
 
 // findInstance finds Terraform resource id for an EC2 instance from Terraform
 // output using instance private ip.
-// An use case is we want to remove a specificed instance. If we simply change
-// count value in Terraform, we will not sure which instance will be removed.
+//
+// Returns the instance from output of `terraform show` for the specified
+// private IP as `aws_instance.<instance-name>[counter]`
+//
+// A use case is we want to remove a specificed instance. If we simply change
+// count value in Terraform, we will not be sure which instance will be removed.
 // By mapping private ip and its associated Terraform resource id in
 //   `terraform show`
 // We can then remove exactly that instance by executing
