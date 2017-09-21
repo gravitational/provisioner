@@ -357,7 +357,7 @@ func (l *Loader) UpsertBucket() error {
 		ACL:    aws.String("private"),
 	}
 	_, err := l.CreateBucket(input)
-	err = awsutil.ConvertS3Error(err, "bucket %s is already exists", aws.String(l.ClusterBucket))
+	err = awsutil.ConvertS3Error(err, "bucket %s already exists", aws.String(l.ClusterBucket))
 	if err != nil {
 		if !trace.IsAlreadyExists(err) {
 			return err
