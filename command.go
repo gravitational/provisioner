@@ -155,6 +155,7 @@ func LoadCommands(app *kingpin.Application, cfg *LoaderConfig) *Command {
 
 // Run parses CLI argument and execute sub-command
 func (c *Command) Run(args []string) error {
+	var err error
 	invokedCommad, err := c.App.Parse(args)
 
 	if err != nil {
@@ -163,14 +164,14 @@ func (c *Command) Run(args []string) error {
 
 	switch invokedCommad {
 	case c.initVars.FullCommand():
-		c.initVars.perform(*c.cfg)
+		err = c.initVars.perform(*c.cfg)
 	case c.syncFiles.FullCommand():
-		c.syncFiles.perform(*c.cfg)
+		err = c.syncFiles.perform(*c.cfg)
 	case c.findInstance.FullCommand():
-		c.findInstance.perform(*c.cfg)
+		err = c.findInstance.perform(*c.cfg)
 	case c.removeS3Key.FullCommand():
-		c.removeS3Key.perform(*c.cfg)
+		err = c.removeS3Key.perform(*c.cfg)
 	}
 
-	return nil
+	return err
 }
