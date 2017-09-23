@@ -17,7 +17,7 @@ provider "aws" {
   region      = "{{.variables.aws.region}}"
   shared_credentials_file = "/var/lib/telekube/aws-credentials"
   profile                 = "default"
-  max_retries = ${var.aws_max_retries}
+  max_retries = "${var.aws_max_retries}"
 }
 
 {{if .variables.aws.vpc_id}}
