@@ -1,0 +1,525 @@
+package provisioner
+
+import (
+	"bufio"
+	"bytes"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
+	"text/template"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/gravitational/provisioner/provider/awsutil"
+	"github.com/gravitational/trace"
+	log "github.com/sirupsen/logrus"
+)
+
+// Loader governs process of inspecting VPC and generating TerraForm template
+// We support 2 modes of loading
+//   * load with an existing VPC: in this case, we will re-use nat gateway,
+//     internet gateway, only subnet and security group will be created
+//   * load without a VPC: in this case, a whole new VPC will be created.
+
+type Loader struct {
+	LoaderConfig
+	EC2 awsutil.EC2Service
+	*s3.S3
+}
+
+// LoaderConfig holds configuration for Loader to work
+type LoaderConfig struct {
+	VPCID           string
+	Region          string
+	TemplatePath    string
+	ClusterTemplate string
+	ClusterBucket   string
+}
+
+// NewLoader initializes Loader from a LoadConfig and related AWS Service
+func NewLoader(config LoaderConfig) (*Loader, error) {
+	sess, err := session.NewSession(&aws.Config{
+		Region: aws.String(config.Region),
+	})
+	if err != nil {
+		return nil, trace.Wrap(err)
+	}
+
+	svc := ec2.New(sess)
+	s3 := s3.New(sess)
+	return &Loader{
+		S3:           s3,
+		EC2:          svc,
+		LoaderConfig: config,
+	}, nil
+}
+
+// loadTemplate loads a Terraform template from a file into an instance of
+// template.Template to generate the final script depending on creating a new
+// VPC or using an existing VPC
+func (l *Loader) loadTemplate() (*template.Template, error) {
+	out, err := ioutil.ReadFile(l.TemplatePath)
+	if err != nil {
+		return nil, trace.ConvertSystemError(err)
+	}
+	t, err := template.New("terraform").Funcs(template.FuncMap{"counter": counter}).Parse(string(out))
+	if err != nil {
+		return nil, trace.ConvertSystemError(err)
+	}
+
+	cluster, err := ioutil.ReadFile(l.ClusterTemplate)
+	if err != nil {
+		return nil, trace.ConvertSystemError(err)
+	}
+	return t.Parse(string(cluster))
+}
+
+// templateForNewVPC generates final TerraForm script when creating a VPC
+func (l *Loader) templateForNewVPC() ([]byte, error) {
+	tpl, err := l.loadTemplate()
+	if err != nil {
+		return nil, trace.Wrap(err)
+	}
+
+	var vpc *awsutil.VPC
+	vpc, err = awsutil.NewVPC(l.EC2, l.Region)
+	if err != nil {
+		return nil, trace.Wrap(err)
+	}
+
+	buf := &bytes.Buffer{}
+	err = tpl.Execute(buf, vpc.GenVars())
+	if err != nil {
+		return nil, trace.Wrap(err)
+	}
+	return buf.Bytes(), nil
+}
+
+// load generates final TerraForm script when using an existing VPC
+func (l *Loader) load() ([]byte, error) {
+	if l.VPCID == "" {
+		return l.templateForNewVPC()
+	}
+
+	internetGateway, err := l.loadInternetGateway()
+	if err != nil {
+		return nil, trace.Wrap(err)
+	}
+
+	log.Debugf("loaded internet gateway: %v", internetGateway)
+
+	natGateways, err := l.loadNatGateways()
+	if err != nil {
+		return nil, trace.Wrap(err)
+	}
+
+	log.Debugf("loaded nat gateways: %v", natGateways)
+
+	// collect public subnets information associated
+	// with nat gateways, so we can set routing properly
+	var subnetIDs []string
+	for _, gateway := range natGateways {
+		subnetIDs = append(subnetIDs, *gateway.SubnetId)
+	}
+
+	subnets, err := l.loadSubnets(subnetIDs)
+	if err != nil {
+		return nil, trace.Wrap(err)
+	}
+	log.Debugf("loaded subnets: %v", subnets)
+
+	// detect regions
+	var regionName string
+	for _, subnet := range subnets {
+		regionName, err = l.loadRegion(*subnet.AvailabilityZone)
+		if err != nil {
+			return nil, trace.Wrap(err)
+		}
+		break
+	}
+
+	// compute subnet ranges
+	privateSubnets, publicSubnets, err := l.computeSubnetRanges(len(subnets))
+	if err != nil {
+		return nil, trace.Wrap(err)
+	}
+	log.Debugf("computed subnet ranges: %v", privateSubnets, publicSubnets)
+
+	tpl, err := l.loadTemplate()
+	if err != nil {
+		return nil, trace.Wrap(err)
+	}
+
+	awsVars := map[string]interface{}{}
+	vars := map[string]interface{}{
+		"variables": map[string]interface{}{
+			"aws": awsVars,
+		},
+	}
+
+	awsVars["subnets"] = privateSubnets
+	awsVars["public_subnets"] = publicSubnets
+	awsVars["region"] = regionName
+	awsVars["vpc_id"] = l.VPCID
+	awsVars["internet_gateway_id"] = *(internetGateway.InternetGatewayId)
+
+	// build nat gateway per AZ map
+	natGatewayIDs := []string{}
+	for _, gateway := range natGateways {
+		natGatewayIDs = append(natGatewayIDs, *gateway.NatGatewayId)
+	}
+
+	awsVars["nat_gateways"] = natGatewayIDs
+
+	// build availability zones deterministic array
+	var azNames []string
+	for _, subnet := range subnets {
+		azNames = append(azNames, *subnet.AvailabilityZone)
+	}
+	awsVars["azs"] = azNames
+	buf := &bytes.Buffer{}
+	err = tpl.Execute(buf, vars)
+	if err != nil {
+		return nil, trace.Wrap(err)
+	}
+	return buf.Bytes(), nil
+}
+
+// counter is a template helper function to generate an increasing counter starting from 0
+func counter() func() int {
+	i := -1
+	return func() int {
+		i++
+		return i
+	}
+}
+
+// loadRegion fetchs AWS region from an availability zone
+func (l *Loader) loadRegion(az string) (string, error) {
+	params := &ec2.DescribeAvailabilityZonesInput{
+		Filters: []*ec2.Filter{
+			{ // Required
+				Name: aws.String("zone-name"),
+				Values: []*string{
+					aws.String(az),
+				},
+			},
+		},
+	}
+	req, out := l.EC2.DescribeAvailabilityZonesRequest(params)
+	if err := req.Send(); err != nil {
+		return "", trace.Wrap(err)
+	}
+	if len(out.AvailabilityZones) == 0 {
+		return "", trace.NotFound("no AZ with name %v found", az)
+	}
+	return aws.StringValue(out.AvailabilityZones[0].RegionName), nil
+}
+
+// loadSubnets fetchs ec2.Subnet struct with a given array of subnet id
+func (l *Loader) loadSubnets(subnetIDs []string) ([]*ec2.Subnet, error) {
+	filter := &ec2.Filter{
+		Name:   aws.String("subnet-id"),
+		Values: []*string{},
+	}
+	for _, subnetID := range subnetIDs {
+		filter.Values = append(filter.Values, aws.String(subnetID))
+	}
+	params := &ec2.DescribeSubnetsInput{
+		Filters: []*ec2.Filter{filter},
+	}
+	req, out := l.EC2.DescribeSubnetsRequest(params)
+	if err := req.Send(); err != nil {
+		return nil, trace.Wrap(err)
+	}
+	if len(out.Subnets) == 0 {
+		return nil, trace.NotFound("no subnets with ids %v found", subnetIDs)
+	}
+	return out.Subnets, nil
+}
+
+func (l *Loader) loadAllSubnets() ([]*ec2.Subnet, error) {
+	params := &ec2.DescribeSubnetsInput{}
+	req, out := l.EC2.DescribeSubnetsRequest(params)
+	if err := req.Send(); err != nil {
+		return nil, trace.Wrap(err)
+	}
+	return out.Subnets, nil
+}
+
+func (l *Loader) computeSubnetRanges(count int) ([]string, []string, error) {
+	vpc, err := l.loadVPC()
+	if err != nil {
+		return nil, nil, trace.Wrap(err)
+	}
+	log.Debugf("vpc %v subnet: %v", vpc, count)
+	subnets, err := l.loadAllSubnets()
+	if err != nil {
+		return nil, nil, trace.Wrap(err)
+	}
+	log.Debugf("all subnets: %v", subnets)
+	var cidrs []string
+	for _, subnet := range subnets {
+		cidrs = append(cidrs, *subnet.CidrBlock)
+	}
+
+	var out []string
+	for i := 0; i < count*2; i++ {
+		next, err := awsutil.SelectVPCSubnet(*vpc.CidrBlock, cidrs)
+		if err != nil {
+			return nil, nil, trace.Wrap(err)
+		}
+		out = append(out, next)
+		cidrs = append(cidrs, next)
+	}
+
+	return out[:len(out)/2], out[len(out)/2:], nil
+}
+
+// loadNatGateways finds all NAT gateways in current vpc
+func (l *Loader) loadNatGateways() ([]*ec2.NatGateway, error) {
+	params := &ec2.DescribeNatGatewaysInput{
+		Filter: []*ec2.Filter{
+			{ // Required
+				Name: aws.String("vpc-id"),
+				Values: []*string{
+					aws.String(l.VPCID),
+				},
+			},
+		},
+	}
+	req, out := l.EC2.DescribeNatGatewaysRequest(params)
+	if err := req.Send(); err != nil {
+		return nil, trace.Wrap(err)
+	}
+	if len(out.NatGateways) == 0 {
+		return nil, trace.NotFound("no nat gateways found")
+	}
+	return out.NatGateways, nil
+}
+
+// loadInternetGateway finds current internet gateway of VPC
+func (l *Loader) loadInternetGateway() (*ec2.InternetGateway, error) {
+	params := &ec2.DescribeInternetGatewaysInput{
+		Filters: []*ec2.Filter{
+			{ // Required
+				Name: aws.String("attachment.vpc-id"),
+				Values: []*string{
+					aws.String(l.VPCID),
+				},
+			},
+		},
+	}
+	req, out := l.EC2.DescribeInternetGatewaysRequest(params)
+	if err := req.Send(); err != nil {
+		return nil, trace.Wrap(err)
+	}
+	if len(out.InternetGateways) == 0 {
+		return nil, trace.NotFound("no internet gateways found")
+	}
+
+	return out.InternetGateways[0], nil
+}
+
+// loadVPC fetchs ec2.Vpc structs from our vpc id
+func (l *Loader) loadVPC() (*ec2.Vpc, error) {
+	params := &ec2.DescribeVpcsInput{
+		Filters: []*ec2.Filter{
+			{ // Required
+				Name: aws.String("vpc-id"),
+				Values: []*string{
+					aws.String(l.VPCID),
+				},
+			},
+		},
+	}
+	req, out := l.EC2.DescribeVpcsRequest(params)
+	if err := req.Send(); err != nil {
+		return nil, trace.Wrap(err)
+	}
+	if len(out.Vpcs) == 0 {
+		return nil, trace.NotFound("no VPC with id %v found", l.VPCID)
+	}
+
+	return out.Vpcs[0], nil
+}
+
+// UpsertBucket upserts bucket if it does not exist
+func (l *Loader) UpsertBucket() error {
+	input := &s3.CreateBucketInput{
+		Bucket: aws.String(l.ClusterBucket),
+		ACL:    aws.String("private"),
+	}
+	_, err := l.CreateBucket(input)
+	err = awsutil.ConvertS3Error(err, "bucket %s already exists", aws.String(l.ClusterBucket))
+	if err != nil {
+		if !trace.IsAlreadyExists(err) {
+			return err
+		}
+	}
+	ver := &s3.PutBucketVersioningInput{
+		Bucket: aws.String(l.ClusterBucket),
+		VersioningConfiguration: &s3.VersioningConfiguration{
+			Status: aws.String("Enabled"),
+		},
+	}
+	_, err = l.PutBucketVersioning(ver)
+	err = awsutil.ConvertS3Error(err, "failed to set versioning state for bucket %s", aws.String(l.ClusterBucket))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+// GetKey downloads key if it exists, otherwise returns NotFound
+func (l *Loader) GetKey(bucketName, bucketKey string) ([]byte, error) {
+	input := &s3.GetObjectInput{
+		Bucket: aws.String(bucketName),
+		Key:    aws.String(bucketKey),
+	}
+	result, err := l.GetObject(input)
+	if err != nil {
+		return nil, awsutil.ConvertS3Error(err)
+	}
+	defer result.Body.Close()
+	return ioutil.ReadAll(result.Body)
+}
+
+func (l *Loader) PutBytes(bucketName, bucketKey string, data []byte) error {
+	return l.PutKey(bucketName, bucketKey, bytes.NewReader(data), int64(len(data)), "text/plain")
+}
+
+// PutKey puts key to the remote storage
+func (l *Loader) PutKey(bucketName, bucketKey string, out io.ReadSeeker, contentSize int64, contentType string) error {
+	params := &s3.PutObjectInput{
+		Bucket:        aws.String(bucketName),
+		Key:           aws.String(bucketKey),
+		Body:          out,
+		ContentLength: aws.Int64(contentSize),
+		ContentType:   aws.String(contentType),
+	}
+	_, err := l.PutObject(params)
+	if err != nil {
+		return awsutil.ConvertS3Error(err, "failed to write key %s to bucket %s", bucketKey, bucketName)
+	}
+	return nil
+}
+
+func (l *Loader) initVars(bucketKey string) error {
+	err := l.UpsertBucket()
+	if err != nil {
+		return trace.Wrap(err)
+	}
+	data, err := l.GetKey(l.ClusterBucket, bucketKey)
+	if err == nil {
+		log.Printf("found vars in s3://%v/%v", l.ClusterBucket, bucketKey)
+		return nil
+	}
+	if !trace.IsNotFound(err) {
+		return trace.Wrap(err, "failed to load key: %v", bucketKey)
+	}
+	log.Printf("key is not found, going to generate data from AWS")
+	data, err = l.load()
+
+	if err != nil {
+		return trace.Wrap(err, "failed to load data from AWS")
+	}
+	err = l.PutBytes(l.ClusterBucket, bucketKey, data)
+	if err != nil {
+		return trace.Wrap(err)
+	}
+	log.Printf("uploaded vars to s3://%v/%v", l.ClusterBucket, bucketKey)
+	return nil
+}
+
+func (l *Loader) sync(paths []string, targetDir string) error {
+	err := os.MkdirAll(targetDir, 0755)
+	if err != nil {
+		return trace.ConvertSystemError(err)
+	}
+	for _, path := range paths {
+		params := &s3.ListObjectsInput{
+			Bucket: aws.String(l.ClusterBucket),
+			Prefix: aws.String(path),
+		}
+		resp, err := l.ListObjects(params)
+		if err != nil {
+			return trace.Wrap(err)
+		}
+		for _, key := range resp.Contents {
+			targetFile := filepath.Join(targetDir, filepath.Base(*key.Key))
+			log.Printf("syncing s3://%v/%v to %v", l.ClusterBucket, *key.Key, targetFile)
+			data, err := l.GetKey(l.ClusterBucket, *key.Key)
+			if err != nil {
+				return trace.Wrap(err)
+			}
+			err = ioutil.WriteFile(targetFile, data, 0644)
+			if err != nil {
+				return trace.Wrap(err)
+			}
+		}
+
+	}
+	return nil
+}
+
+func (l *Loader) rm(key string) error {
+	params := &s3.DeleteObjectInput{
+		Bucket: aws.String(l.ClusterBucket),
+		Key:    aws.String(key),
+	}
+	_, err := l.DeleteObject(params)
+	if err == nil {
+		log.Printf("removed key s3://%v/%v", l.ClusterBucket, key)
+	}
+	return awsutil.ConvertS3Error(err, "failed to remove key %s", key)
+}
+
+// findInstance finds Terraform resource id for an EC2 instance from Terraform
+// output using instance private ip.
+//
+// Returns the instance from output of `terraform show` for the specified
+// private IP as `aws_instance.<instance-name>[counter]`
+//
+// A use case is we want to remove a specificed instance. If we simply change
+// count value in Terraform, we will not be sure which instance will be removed.
+// By mapping private ip and its associated Terraform resource id in
+//   `terraform show`
+// We can then remove exactly that instance by executing
+//   `terraform destroy --target=resource-id`
+func findInstance(privateIP string, stdin *os.File) (string, error) {
+	if privateIP == "" {
+		return "", trace.BadParameter("private ip can not be empty")
+	}
+
+	if stdin == nil {
+		stdin = os.Stdin
+	}
+
+	scanner := bufio.NewScanner(stdin)
+	var resourceName string
+	expr, err := regexp.Compile(fmt.Sprintf(`\s*private_ip\s*=\s*%v\s*`, privateIP))
+	if err != nil {
+		return "", trace.Wrap(err)
+	}
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if strings.HasPrefix(line, "aws_instance.") {
+			resourceName = strings.TrimSuffix(line, ":")
+			parts := strings.Split(resourceName, ".")
+			if len(parts) > 1 {
+				resourceName = strings.Join(parts[:len(parts)-1], ".") + "[" + parts[len(parts)-1] + "]"
+			}
+		} else if expr.MatchString(line) {
+			return resourceName, nil
+		}
+	}
+
+	return "", trace.NotFound("instance with ip %v not found", privateIP)
+}
