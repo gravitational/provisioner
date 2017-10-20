@@ -113,7 +113,7 @@ resource "aws_route_table_association" "public" {
 
 // security groups
 resource "aws_security_group" "kubernetes" {
-  name   = "${var.cluster_name}-secgroup"
+  name   = "${var.cluster_name}"
   {{if .variables.aws.vpc_id}}
   vpc_id = "${var.vpc_id}"
   {{else}}
