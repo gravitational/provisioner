@@ -24,3 +24,14 @@ variable "node_count" {
 // instance types for nodes
 variable "node_instance_type" {
 }
+
+// AWS KMS alias used for encryption/decryption
+// default is alias used in SSM
+variable "kms_alias_name" {
+   default = "alias/aws/ssm"
+}
+
+// safe cluster name to use in places sensitive to naming, e.g. SQS queues and lifecycle hooks
+locals {
+  safe_cluster_name = "${replace(var.cluster_name, "/[^a-zA-Z0-9\\-]/", "")}"
+}

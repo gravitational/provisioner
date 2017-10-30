@@ -1,8 +1,12 @@
 data "template_file" "user_data" {
   template = "${file("user-data.tpl")}"
+  vars {
+    ops_url = "${var.ops_url}"
+    ops_token = "${var.ops_token}"
+  }
 }
 
-resource "aws_instance" "node" {
+resource "aws_instance" "master" {
   count                       = "${var.node_count}"
   ami                         = "${data.aws_ami.base.id}"
   instance_type               = "${var.node_instance_type}"
@@ -11,7 +15,7 @@ resource "aws_instance" "node" {
   source_dest_check           = false
   vpc_security_group_ids      = ["${aws_security_group.kubernetes.id}"]
   subnet_id                   = "${element(aws_subnet.private.*.id, count.index % length(aws_subnet.private.*.id))}"
-  iam_instance_profile        = "${aws_iam_instance_profile.node.id}"
+  iam_instance_profile        = "${aws_iam_instance_profile.master.id}"
   ebs_optimized               = true
   user_data                   = "${data.template_file.user_data.rendered}"
 
@@ -39,10 +43,19 @@ resource "aws_instance" "node" {
    }
 }
 
-resource "aws_iam_instance_profile" "node" {
-  name       = "node-${var.cluster_name}"
+resource "aws_iam_instance_profile" "master" {
+  name       = "master-${var.cluster_name}"
   role       = "${aws_iam_role.master.name}"
   depends_on = ["aws_iam_role_policy.master"]
+  provisioner "local-exec" {
+    command = "sleep 30"
+  }
+}
+
+resource "aws_iam_instance_profile" "node" {
+  name       = "node-${var.cluster_name}"
+  role       = "${aws_iam_role.node.name}"
+  depends_on = ["aws_iam_role_policy.node"]
   provisioner "local-exec" {
     command = "sleep 30"
   }

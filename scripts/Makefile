@@ -28,7 +28,8 @@ TELEKUBE_FLAVOR ?=
 # All profile names
 TELEKUBE_NODE_PROFILES ?=
 # Telekube node profiles count requested via UI or API
-TELEKUBE_NODE_PROFILE_COUNT_node ?=
+# set to 0 if not set, otherwise new terraform will crash
+TELEKUBE_NODE_PROFILE_COUNT_node ?= 0
 # Telekube instance type
 TELEKUBE_NODE_PROFILE_INSTANCE_TYPE_node ?=
 # AWS instance private IP address of the instance to delete
@@ -182,6 +183,8 @@ sync-files:
 
 .PHONY: terraform-init
 terraform-init:
+# copy user-data templates to the input directory
+	cp $(CWD)/terraform/*.tpl /mnt/state/cluster/input
 # copy terraform files to the input directory
 	cp $(CWD)/terraform/*.tf /mnt/state/cluster/input
 # init the config using s3 backend
@@ -191,7 +194,7 @@ terraform-init:
 			-backend-config='bucket=$(BUCKET_NAME)' \
 			-backend-config="region=$(AWS_REGION)" \
 			-backend-config='key=$(TELEKUBE_CLUSTER_NAME)/cluster.tfstate' \
-			'/mnt/state/cluster/input'
+			--from-module='/mnt/state/cluster/input'
 
 .PHONY: terraform-remove-instance
 terraform-remove-instance:
