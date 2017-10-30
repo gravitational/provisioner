@@ -1,13 +1,21 @@
 #!/bin/bash
-set -x
+set -xeuo pipefail
 
-umount /dev/xvdb
+# mount all required volumes
+umount /dev/xvdb || true
 mkfs.ext4 /dev/xvdb
+mkfs.ext4 /dev/xvdf
 sed -i.bak '/xvdb/d' /etc/fstab
 echo -e '/dev/xvdb\t/var/lib/gravity\text4\tdefaults\t0\t2' >> /etc/fstab
+echo -e '/dev/xvdf\t/var/lib/gravity/planet/etcd\text4\tdefaults\t0\t2' >> /etc/fstab
+
 mkdir -p /var/lib/gravity
 mount /var/lib/gravity
-chown -R 1000:1000 /var/lib/gravity
+mkdir -p /var/lib/gravity/planet/etcd
+mount /var/lib/gravity/planet/etcd
+chown -R 1000:1000 /var/lib/gravity /var/lib/gravity/planet/etcd
+
+# Fix up sudoers
 sed -i.bak 's/Defaults    requiretty/#Defaults    requiretty/g' /etc/sudoers
 export SUDO_USER=centos
 export SUDO_UID=1000
