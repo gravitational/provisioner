@@ -4,8 +4,7 @@ CWD := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 VENDORBIN = $(CURDIR)/vendor/bin
 PATH     := $(VENDORBIN):$(PATH)
 
-#PROV_VERSION ?= $(shell git describe --tags 2>/dev/null ||  git rev-parse HEAD)
-PROV_VERSION := 0.0.4-alpha.1
+PROV_VERSION ?= $(shell git describe --tags 2>/dev/null ||  git rev-parse HEAD)
 PROV_REPO = quay.io/gravitational/provisioner
 TERRAFORM_VER ?= 0.10.8
 BUILDBOX_TAG ?= golang:1.9.0-stretch
