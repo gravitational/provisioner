@@ -1,3 +1,7 @@
+data "aws_kms_alias" "ssm" {
+  name = "${var.kms_alias_name}"
+}
+
 resource "aws_iam_role" "master" {
   name = "${var.cluster_name}-master"
 
@@ -46,6 +50,56 @@ resource "aws_iam_role_policy" "master" {
             "Action": "s3:*",
             "Resource": [
                 "arn:aws:s3:::kubernetes-*"
+            ]
+        }
+    ]
+}
+EOF
+}
+
+
+resource "aws_iam_role_policy" "master_ssm" {
+  name = "${var.cluster_name}-master-ssm"
+  role = "${aws_iam_role.master.id}"
+
+  policy = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ssm:DescribeParameters",
+                "ssm:GetParameters",
+                "ssm:GetParameter",
+                "ssm:PutParameter",
+                "ssm:DeleteParameter",
+                "ssm:GetParametersByPath"
+            ],
+            "Resource": "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/telekube/${var.cluster_name}/*"
+        }
+    ]
+}
+EOF
+}
+
+
+resource "aws_iam_role_policy" "master_lifecycle_hooks" {
+  name = "${var.cluster_name}-master-lifecycle-hooks"
+  role = "${aws_iam_role.master.id}"
+
+  policy = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Resource": "${aws_sqs_queue.lifecycle_hooks.arn}",
+            "Action": [
+                "sqs:GetQueueAttributes",
+                "sqs:ReceiveMessage",
+                "sqs:DeleteMessage",
+                "sqs:GetQueueUrl"
             ]
         }
     ]
@@ -131,6 +185,38 @@ resource "aws_iam_role_policy" "node" {
             ],
             "Resource": "*"
         }
+    ]
+}
+EOF
+}
+
+resource "aws_iam_role_policy" "node_ssm" {
+  name = "${var.cluster_name}-node-ssm"
+  role = "${aws_iam_role.node.id}"
+
+  policy = <<EOF
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ssm:DescribeParameters",
+                "ssm:GetParameters",
+                "ssm:GetParametersByPath",
+                "ssm:GetParameter"
+            ],
+            "Resource": "arn:aws:ssm:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:parameter/telekube/${var.cluster_name}/*"
+        },
+        {
+         "Effect":"Allow",
+         "Action":[
+            "kms:Decrypt"
+         ],
+         "Resource":[
+            "arn:aws:kms:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:key/${data.aws_kms_alias.ssm.target_key_id}"
+         ]
+      }
     ]
 }
 EOF

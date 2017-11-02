@@ -1,5 +1,6 @@
-# provisioner
-Terraform based provisioners for ops center
+# Provisioner
+
+Terraform based provisioners for Ops Center
 
 # Overview
 
@@ -182,3 +183,19 @@ docker run --rm -it \
   quay.io/gravitational/provisioner:0.0.3 \
     init-cluster
 ```
+
+
+### AWS Auto Scale Groups Support
+
+Provisioner supports [AWS Auto Scaling Groups](http://docs.aws.amazon.com/autoscaling/latest/userguide/AutoScalingGroup.html).
+
+Every Telekube cluster publishes join token and internal load balancer address via [Systems manager parameter store](http://docs.aws.amazon.com/systems-manager/latest/userguide/systems-manager-paramstore.html).
+
+Nodes provisioned via Auto Scaling group use this information to discover the cluster and join to it.
+
+Provisioner scripts create IAM policies for nodes to read the SSM parameters and for master nodes to publish parameters to the store.
+
+Master nodes are not part of the auto scaling group and are managed separately.
+
+
+

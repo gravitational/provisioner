@@ -1,14 +1,6 @@
 {{define "cluster"}}
 
-terraform {
-  backend "s3" {
-  }
-}
-
-provider "random" {}
-
 // private subnets and routing tables
-
 resource "aws_route_table" "private" {
   count  = "${length(var.azs)}"
 
@@ -49,6 +41,7 @@ resource "aws_subnet" "private" {
   tags {
     KubernetesCluster = "${var.cluster_name}"
     Name              = "${var.cluster_name}"
+    "kubernetes.io/role/internal-elb" = "1"
   }
 }
 
@@ -59,7 +52,6 @@ resource "aws_route_table_association" "private" {
 }
 
 // public subnets and routing tables
-
 resource "aws_route_table" "public" {
   count  = "${length(var.azs)}"
   {{if .variables.aws.vpc_id}}
@@ -73,7 +65,6 @@ resource "aws_route_table" "public" {
     Name              = "${var.cluster_name}"
   }
 }
-
 
 resource "aws_route" "public_gateway" {
    count  = "${length(var.azs)}"
@@ -101,6 +92,7 @@ resource "aws_subnet" "public" {
   tags {
     KubernetesCluster = "${var.cluster_name}"
     Name              = "${var.cluster_name}"
+    "kubernetes.io/role/elb" = "1"
   }
 }
 
