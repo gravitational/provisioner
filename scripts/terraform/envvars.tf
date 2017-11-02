@@ -35,3 +35,12 @@ variable "kms_alias_name" {
 locals {
   safe_cluster_name = "${replace(var.cluster_name, "/[^a-zA-Z0-9\\-]/", "")}"
 }
+
+// common tags required on all resources
+locals {
+  common_tags = {
+    Terraform         = "true"
+    KubernetesCluster = "${var.cluster_name}"
+    Name              = "${var.cluster_name}"
+  }
+}

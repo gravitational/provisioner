@@ -10,10 +10,9 @@ resource "aws_route_table" "private" {
   vpc_id = "${aws_vpc.kubernetes.id}"
   {{end}}
 
-  tags {
-    KubernetesCluster = "${var.cluster_name}"
-    Name              = "${var.cluster_name}"
-  }
+  tags = "${merge(local.common_tags, map(
+    "Name", "${var.cluster_name}-private"
+  ))}"
 }
 
 resource "aws_route" "private_nat" {
@@ -38,11 +37,10 @@ resource "aws_subnet" "private" {
   cidr_block        = "${element(var.subnets, count.index)}"
   availability_zone = "${element(var.azs, count.index)}"
 
-  tags {
-    KubernetesCluster = "${var.cluster_name}"
-    Name              = "${var.cluster_name}"
-    "kubernetes.io/role/internal-elb" = "1"
-  }
+  tags = "${merge(local.common_tags, map(
+    "Name", "${var.cluster_name}-private",
+    "kubernetes.io/role/internal-elb", "1"
+  ))}"
 }
 
 resource "aws_route_table_association" "private" {
@@ -60,10 +58,9 @@ resource "aws_route_table" "public" {
   vpc_id = "${aws_vpc.kubernetes.id}"
   {{end}}
 
-  tags {
-    KubernetesCluster = "${var.cluster_name}"
-    Name              = "${var.cluster_name}"
-  }
+  tags = "${merge(local.common_tags, map(
+    "Name", "${var.cluster_name}-public"
+  ))}"
 }
 
 resource "aws_route" "public_gateway" {
@@ -89,11 +86,10 @@ resource "aws_subnet" "public" {
   cidr_block        = "${element(var.public_subnets, count.index)}"
   availability_zone = "${element(var.azs, count.index)}"
 
-  tags {
-    KubernetesCluster = "${var.cluster_name}"
-    Name              = "${var.cluster_name}"
-    "kubernetes.io/role/elb" = "1"
-  }
+  tags = "${merge(local.common_tags, map(
+    "Name", "${var.cluster_name}-public",
+    "kubernetes.io/role/elb", "1"
+  ))}"
 }
 
 resource "aws_route_table_association" "public" {
@@ -112,10 +108,7 @@ resource "aws_security_group" "kubernetes" {
   vpc_id = "${aws_vpc.kubernetes.id}"
   {{end}}
 
-  tags {
-    KubernetesCluster = "${var.cluster_name}"
-    Name              = "${var.cluster_name}"
-  }
+  tags = "${merge(local.common_tags, map())}"
 }
 
 resource "aws_security_group_rule" "ingress_allow_ssh" {
