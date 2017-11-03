@@ -9,9 +9,9 @@ resource "aws_sqs_queue" "lifecycle_hooks" {
 }
 
 resource "aws_iam_role" "lifecycle_hooks" {
+  name = "${var.cluster_name}-lifecycle-hooks"
 
-    name = "${var.cluster_name}-lifecycle-hooks"
-    assume_role_policy = <<EOF
+  assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
   "Statement": [
@@ -27,17 +27,17 @@ resource "aws_iam_role" "lifecycle_hooks" {
 }
 EOF
 
-    lifecycle {
-        create_before_destroy = true
-    }
-
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 # Attach policy document for access to the sqs queue
 resource "aws_iam_role_policy" "lifecycle_hooks" {
-    name = "${var.cluster_name}-lifecycle-hooks"
-    role = "${aws_iam_role.lifecycle_hooks.id}"
-    policy = <<EOF
+  name = "${var.cluster_name}-lifecycle-hooks"
+  role = "${aws_iam_role.lifecycle_hooks.id}"
+
+  policy = <<EOF
 {
   "Version": "2012-10-17",
   "Statement": [{
@@ -52,8 +52,7 @@ resource "aws_iam_role_policy" "lifecycle_hooks" {
 }
 EOF
 
-    lifecycle {
-        create_before_destroy = true
-    }
-
+  lifecycle {
+    create_before_destroy = true
+  }
 }

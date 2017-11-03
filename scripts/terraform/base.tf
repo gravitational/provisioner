@@ -1,7 +1,6 @@
 terraform {
   required_version = "~> 0.10.8"
-  backend "s3" {
-  }
+  backend "s3" {}
 }
 
 provider "random" {
@@ -16,6 +15,4 @@ data "aws_region" "current" {
   current = true
 }
 
-data "aws_caller_identity" "current" {
-}
-
+data "aws_caller_identity" "current" {}
