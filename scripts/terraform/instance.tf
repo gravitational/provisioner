@@ -1,7 +1,8 @@
 data "template_file" "user_data" {
   template = "${file("user-data.tpl")}"
+
   vars {
-    ops_url = "${var.ops_url}"
+    ops_url   = "${var.ops_url}"
     ops_token = "${var.ops_token}"
   }
 }
@@ -21,7 +22,7 @@ resource "aws_instance" "master" {
   tags                        = "${merge(local.common_tags, map())}"
 
   lifecycle {
-     ignore_changes = [ "user_data", "instance_type" ]
+    ignore_changes = ["user_data", "instance_type"]
   }
 
   root_block_device {
@@ -44,6 +45,7 @@ resource "aws_iam_instance_profile" "master" {
   name       = "master-${var.cluster_name}"
   role       = "${aws_iam_role.master.name}"
   depends_on = ["aws_iam_role_policy.master"]
+
   provisioner "local-exec" {
     command = "sleep 30"
   }
@@ -53,6 +55,7 @@ resource "aws_iam_instance_profile" "node" {
   name       = "node-${var.cluster_name}"
   role       = "${aws_iam_role.node.name}"
   depends_on = ["aws_iam_role_policy.node"]
+
   provisioner "local-exec" {
     command = "sleep 30"
   }

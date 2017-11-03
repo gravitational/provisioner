@@ -57,7 +57,6 @@ resource "aws_iam_role_policy" "master" {
 EOF
 }
 
-
 resource "aws_iam_role_policy" "master_ssm" {
   name = "${var.cluster_name}-master-ssm"
   role = "${aws_iam_role.master.id}"
@@ -82,7 +81,6 @@ resource "aws_iam_role_policy" "master_ssm" {
 }
 EOF
 }
-
 
 resource "aws_iam_role_policy" "master_lifecycle_hooks" {
   name = "${var.cluster_name}-master-lifecycle-hooks"

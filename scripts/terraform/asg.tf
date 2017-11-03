@@ -1,5 +1,5 @@
 resource "aws_autoscaling_group" "nodes" {
-  name = "${var.cluster_name}"
+  name                      = "${var.cluster_name}"
   max_size                  = 10
   min_size                  = 0
   health_check_grace_period = 300
@@ -18,6 +18,7 @@ resource "aws_autoscaling_group" "nodes" {
 
 data "template_file" "node_user_data" {
   template = "${file("node-user-data.tpl")}"
+
   vars {
     cluster_name = "${var.cluster_name}"
   }
@@ -50,7 +51,6 @@ resource "aws_launch_configuration" "node" {
   }
 }
 
-
 resource "aws_autoscaling_lifecycle_hook" "launching" {
   name                   = "${local.safe_cluster_name}-launching"
   autoscaling_group_name = "${aws_autoscaling_group.nodes.name}"
@@ -65,13 +65,12 @@ resource "aws_autoscaling_lifecycle_hook" "launching" {
 EOF
 
   notification_target_arn = "${aws_sqs_queue.lifecycle_hooks.arn}"
-  role_arn = "${aws_iam_role.lifecycle_hooks.arn}"
+  role_arn                = "${aws_iam_role.lifecycle_hooks.arn}"
 
   lifecycle {
     create_before_destroy = true
   }
 }
-
 
 resource "aws_autoscaling_lifecycle_hook" "terminating" {
   name                   = "${local.safe_cluster_name}-terminating"
@@ -87,7 +86,7 @@ resource "aws_autoscaling_lifecycle_hook" "terminating" {
 EOF
 
   notification_target_arn = "${aws_sqs_queue.lifecycle_hooks.arn}"
-  role_arn = "${aws_iam_role.lifecycle_hooks.arn}"
+  role_arn                = "${aws_iam_role.lifecycle_hooks.arn}"
 
   lifecycle {
     create_before_destroy = true
