@@ -21,6 +21,18 @@ provider "aws" {
   max_retries = "${var.aws_max_retries}"
 }
 
+variable "azs" {
+   default = [{{$c := counter}}{{range $idx, $az := .variables.aws.azs}}{{if call $c}}, {{end}}"{{$az}}"{{end}}]
+}
+
+variable "subnets" {
+   default = [{{$c := counter}}{{range $idx, $subnet := .variables.aws.subnets}}{{if call $c}}, {{end}}"{{$subnet}}"{{end}}]
+}
+
+variable "public_subnets" {
+   default = [{{$c := counter}}{{range $idx, $subnet := .variables.aws.public_subnets}}{{if call $c}}, {{end}}"{{$subnet}}"{{end}}]
+}
+
 {{if .variables.aws.vpc_id}}
 variable "vpc_id" {
   default = "{{.variables.aws.vpc_id}}"
@@ -34,35 +46,11 @@ variable "nat_gateways" {
   default = [{{$c := counter}}{{range $gateway_id := .variables.aws.nat_gateways}}{{if call $c}}, {{end}}"{{$gateway_id}}"{{end}}]
 }
 
-variable "azs" {
-   default = [{{$c := counter}}{{range $idx, $az := .variables.aws.azs}}{{if call $c}}, {{end}}"{{$az}}"{{end}}]
-}
-
-variable "subnets" {
-   default = [{{$c := counter}}{{range $idx, $subnet := .variables.aws.subnets}}{{if call $c}}, {{end}}"{{$subnet}}"{{end}}]
-}
-
-variable "public_subnets" {
-   default = [{{$c := counter}}{{range $idx, $subnet := .variables.aws.public_subnets}}{{if call $c}}, {{end}}"{{$subnet}}"{{end}}]
-}
 {{else}}
 
 variable "vpc_cidr" {
   default = "{{.variables.aws.vpc_cidr}}"
 }
-
-variable "azs" {
-   default = [{{$c := counter}}{{range $idx, $az := .variables.aws.azs}}{{if call $c}}, {{end}}"{{$az}}"{{end}}]
-}
-
-variable "subnets" {
-   default = [{{$c := counter}}{{range $idx, $subnet := .variables.aws.subnets}}{{if call $c}}, {{end}}"{{$subnet}}"{{end}}]
-}
-
-variable "public_subnets" {
-   default = [{{$c := counter}}{{range $idx, $subnet := .variables.aws.public_subnets}}{{if call $c}}, {{end}}"{{$subnet}}"{{end}}]
-}
-
 
 resource "aws_vpc" "kubernetes" {
   cidr_block            = "{{.variables.aws.vpc_cidr}}"
