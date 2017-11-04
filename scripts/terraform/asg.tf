@@ -11,7 +11,8 @@ resource "aws_autoscaling_group" "nodes" {
 
   tags = "${local.asg_tags}"
 
-  // external agents can modify this value
+  // external autoscale algos can modify these values,
+  // so ignore changes to them
   lifecycle {
     ignore_changes = ["desired_capacity", "max_size", "min_size"]
   }
