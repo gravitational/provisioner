@@ -10,6 +10,11 @@ resource "aws_autoscaling_group" "nodes" {
   vpc_zone_identifier       = ["${aws_subnet.private.*.id}"]
 
   tags = "${local.asg_tags}"
+
+  // external agents can modify this value
+  lifecycle {
+    ignore_changes = ["desired_capacity", "max_size", "min_size"]
+  }
 }
 
 data "template_file" "node_user_data" {
