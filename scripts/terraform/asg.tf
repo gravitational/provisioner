@@ -9,16 +9,11 @@ resource "aws_autoscaling_group" "nodes" {
   launch_configuration      = "${aws_launch_configuration.node.name}"
   vpc_zone_identifier       = ["${aws_subnet.private.*.id}"]
 
-  tag {
-    key                 = "KubernetesCluster"
-    value               = "${var.cluster_name}"
-    propagate_at_launch = true
-  }
+  tags = "${local.asg_tags}"
 }
 
 data "template_file" "node_user_data" {
   template = "${file("node-user-data.tpl")}"
-
   vars {
     cluster_name = "${var.cluster_name}"
   }
