@@ -32,11 +32,21 @@ resource "aws_instance" "master" {
     iops                  = 500
   }
 
+  # /var/lib/gravity device with all the stuff (docker, etc)
   ebs_block_device = {
     delete_on_termination = true
     volume_type           = "io1"
     volume_size           = "500"
     device_name           = "/dev/xvdb"
+    iops                  = 1500
+  }
+
+  # etcd device on a separate disk, so it's not too flaky
+  ebs_block_device = {
+    delete_on_termination = true
+    volume_type           = "io1"
+    volume_size           = "100"
+    device_name           = "/dev/xvdf"
     iops                  = 1500
   }
 }
