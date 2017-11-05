@@ -1,18 +1,18 @@
 package provisioner
 
 import (
-	"github.com/gravitational/provisioner/provider/awsutil"
-	. "gopkg.in/check.v1"
 	"io/ioutil"
 	"os"
+
+	"github.com/gravitational/provisioner/provider/awsutil"
+	. "gopkg.in/check.v1"
 )
 
 // Test generating terraform script with an existing VPC as input
 func (s *ProvisionerSuite) TestLoadWithVPC(c *C) {
 	cfg := LoaderConfig{
-		TemplatePath:    "./fixture/vars.tf.template",
-		ClusterTemplate: "./fixture/cluster.tf.template",
-		VPCID:           "vpc-1",
+		TemplatePath: "./fixture/vars.tf.template",
+		VPCID:        "vpc-1",
 	}
 
 	loader, err := NewLoader(cfg)
@@ -32,9 +32,8 @@ func (s *ProvisionerSuite) TestLoadWithVPC(c *C) {
 // Test generating terraform script without an input VPC
 func (s *ProvisionerSuite) TestLoadWithoutVPC(c *C) {
 	cfg := LoaderConfig{
-		Region:          "us-west-1",
-		TemplatePath:    "./fixture/vars.tf.template",
-		ClusterTemplate: "./fixture/cluster.tf.template",
+		Region:       "us-west-1",
+		TemplatePath: "./fixture/vars.tf.template",
 	}
 
 	loader, err := NewLoader(cfg)

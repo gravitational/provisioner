@@ -17,7 +17,7 @@ variable "aws_region" {
   default = "{{.variables.aws.region}}"
 }
 
-{{if .variables.aws.vpc_id}}
+{{ if .variables.aws.vpc_id -}}
 variable "vpc_id" {
   default = "{{.variables.aws.vpc_id}}"
 }
@@ -30,7 +30,7 @@ variable "nat_gateways" {
   default = [{{$c := counter}}{{range $gateway_id := .variables.aws.nat_gateways}}{{if call $c}}, {{end}}"{{$gateway_id}}"{{end}}]
 }
 
-{{else}}
+{{- else -}}
 
 variable "vpc_cidr" {
   default = "{{.variables.aws.vpc_cidr}}"
@@ -72,4 +72,4 @@ variable "nat_gateways" {
   type="list"
   default = ["${aws_nat_gateway.kubernetes.*.id}"]
 }
-{{end}}
+{{- end }}

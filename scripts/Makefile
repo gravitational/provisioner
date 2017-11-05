@@ -166,7 +166,6 @@ init-cluster:
 		--vpc-id=$(AWS_VPC_ID) \
 		--cluster-bucket=$(BUCKET_NAME) \
 		--template=$(CWD)/terraform/templates/vars.tf.template \
-		--cluster-template=$(CWD)/terraform/templates/cluster.tf.template \
 		--key=cluster/vars.tf
 
 
