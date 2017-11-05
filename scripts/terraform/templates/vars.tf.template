@@ -13,6 +13,10 @@ variable "public_subnets" {
    default = [{{$c := counter}}{{range $idx, $subnet := .variables.aws.public_subnets}}{{if call $c}}, {{end}}"{{$subnet}}"{{end}}]
 }
 
+variable "aws_region" {
+  default = "{{.variables.aws.region}}"
+}
+
 {{if .variables.aws.vpc_id}}
 variable "vpc_id" {
   default = "{{.variables.aws.vpc_id}}"
