@@ -11,6 +11,18 @@ provider "template" {
   version = "~> 1.0"
 }
 
+variable "aws_max_retries" {
+  default = 5
+}
+
+provider "aws" {
+  version                 = "~> 1.1"
+  region                  = "${var.aws_region}"
+  shared_credentials_file = "/var/lib/telekube/aws-credentials"
+  profile                 = "default"
+  max_retries             = "${var.aws_max_retries}"
+}
+
 data "aws_region" "current" {
   current = true
 }

@@ -1,25 +1,5 @@
 // these variables are loaded from
 // existing AWS environment and VPC
-data "aws_ami" "base" {
-  most_recent = true
-  owners = ["self"]
-  filter {
-    name = "name"
-    values = ["centos-7-k8s-base-ami *"]
-  }
-}
-
-variable "aws_max_retries" {
-  default = 5
-}
-
-provider "aws" {
-  version     = "~> 1.1"
-  region      = "{{.variables.aws.region}}"
-  shared_credentials_file = "/var/lib/telekube/aws-credentials"
-  profile                 = "default"
-  max_retries = "${var.aws_max_retries}"
-}
 
 variable "azs" {
    default = [{{$c := counter}}{{range $idx, $az := .variables.aws.azs}}{{if call $c}}, {{end}}"{{$az}}"{{end}}]
@@ -31,6 +11,10 @@ variable "subnets" {
 
 variable "public_subnets" {
    default = [{{$c := counter}}{{range $idx, $subnet := .variables.aws.public_subnets}}{{if call $c}}, {{end}}"{{$subnet}}"{{end}}]
+}
+
+variable "aws_region" {
+  default = "{{.variables.aws.region}}"
 }
 
 {{if .variables.aws.vpc_id}}

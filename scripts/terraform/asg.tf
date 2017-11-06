@@ -20,6 +20,7 @@ resource "aws_autoscaling_group" "nodes" {
 
 data "template_file" "node_user_data" {
   template = "${file("node-user-data.tpl")}"
+
   vars {
     cluster_name = "${var.cluster_name}"
   }

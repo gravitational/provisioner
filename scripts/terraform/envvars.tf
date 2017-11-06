@@ -42,13 +42,14 @@ locals {
 // Create ASG tag setup from common tags
 resource "null_resource" "asg_tags" {
   count = "${length(local.common_tags)}"
+
   triggers {
-    key                 = "${element(keys(local.common_tags), count.index)}",
-    value               = "${element(values(local.common_tags), count.index)}",
+    key                 = "${element(keys(local.common_tags), count.index)}"
+    value               = "${element(values(local.common_tags), count.index)}"
     propagate_at_launch = true
   }
 }
 
 locals {
-    asg_tags = ["${null_resource.asg_tags.*.triggers}"]
+  asg_tags = ["${null_resource.asg_tags.*.triggers}"]
 }
