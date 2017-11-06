@@ -1,7 +1,0 @@
-{{ define "cluster" }}
-{{ if .variables.aws.vpc_id}}
-vpc_id = "${var.vpc_id}"
-{{- else }}
-vpc_id = "${aws_vpc.kubernetes.id}"
-{{- end }}
-{{- end }}

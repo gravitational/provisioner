@@ -2,6 +2,7 @@ package provisioner
 
 import (
 	"fmt"
+
 	"github.com/gravitational/trace"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
@@ -119,7 +120,6 @@ func (c *Command) registerInitVars() {
 	cinitVars.Flag("vpc-id", "AWS VPC to inspect").Required().StringVar(&c.cfg.VPCID)
 	cinitVars.Flag("region", "AWS region to inspect").Required().StringVar(&c.cfg.Region)
 	cinitVars.Flag("cluster-bucket", "Check bucket key for pre-stored value").Required().StringVar(&c.cfg.ClusterBucket)
-	cinitVars.Flag("cluster-template", "Path to cluster template").StringVar(&c.cfg.ClusterTemplate)
 	cinitVars.Flag("template", "Path to vars template").Required().StringVar(&c.cfg.TemplatePath)
 	cinitVars.varsKey = cinitVars.CmdClause.Flag("key", "Key with cluster specific variables").String()
 

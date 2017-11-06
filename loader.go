@@ -35,11 +35,10 @@ type Loader struct {
 
 // LoaderConfig holds configuration for Loader to work
 type LoaderConfig struct {
-	VPCID           string
-	Region          string
-	TemplatePath    string
-	ClusterTemplate string
-	ClusterBucket   string
+	VPCID         string
+	Region        string
+	TemplatePath  string
+	ClusterBucket string
 }
 
 // NewLoader initializes Loader from a LoadConfig and related AWS Service
@@ -73,11 +72,7 @@ func (l *Loader) loadTemplate() (*template.Template, error) {
 		return nil, trace.ConvertSystemError(err)
 	}
 
-	cluster, err := ioutil.ReadFile(l.ClusterTemplate)
-	if err != nil {
-		return nil, trace.ConvertSystemError(err)
-	}
-	return t.Parse(string(cluster))
+	return t, nil
 }
 
 // templateForNewVPC generates final TerraForm script when creating a VPC

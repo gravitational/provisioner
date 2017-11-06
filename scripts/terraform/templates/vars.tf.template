@@ -17,7 +17,7 @@ variable "aws_region" {
   default = "{{.variables.aws.region}}"
 }
 
-{{if .variables.aws.vpc_id}}
+{{ if .variables.aws.vpc_id -}}
 variable "vpc_id" {
   default = "{{.variables.aws.vpc_id}}"
 }
@@ -30,7 +30,7 @@ variable "nat_gateways" {
   default = [{{$c := counter}}{{range $gateway_id := .variables.aws.nat_gateways}}{{if call $c}}, {{end}}"{{$gateway_id}}"{{end}}]
 }
 
-{{else}}
+{{- else -}}
 
 variable "vpc_cidr" {
   default = "{{.variables.aws.vpc_cidr}}"
@@ -43,25 +43,33 @@ resource "aws_vpc" "kubernetes" {
   tags                  = "${merge(local.common_tags, map())}"
 }
 
+variable "vpc_id" {
+  default = "${aws_vpc.kubernetes.id}"
+}
 
 resource "aws_eip" "nat" {
   count = "${length(var.azs)}"
   vpc   = true
 }
 
-
 resource "aws_internet_gateway" "kubernetes" {
   vpc_id = "{{or .variables.aws.vpc_id "${aws_vpc.kubernetes.id}"}}"
   tags   = "${merge(local.common_tags, map())}"
 }
 
+variable "internet_gateway_id" {
+  default = "${aws_internet_gateway.kubernetes.id}"
+}
 
 resource "aws_nat_gateway" "kubernetes" {
   count         = "${length(var.azs)}"
   allocation_id = "${element(aws_eip.nat.*.id, count.index)}"
   subnet_id     = "${element(aws_subnet.public.*.id, count.index)}"
-  depends_on = ["aws_subnet.public", "aws_internet_gateway.kubernetes"]
+  depends_on    = ["aws_subnet.public", "aws_internet_gateway.kubernetes"]
 }
-{{end}}
 
-{{template "cluster" .}}
+variable "nat_gateways" {
+  type="list"
+  default = ["${aws_nat_gateway.kubernetes.*.id}"]
+}
+{{- end }}
