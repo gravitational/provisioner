@@ -18,16 +18,10 @@ variable "aws_region" {
 }
 
 {{ if .variables.aws.vpc_id -}}
-variable "vpc_id" {
-  default = "{{.variables.aws.vpc_id}}"
-}
-
-variable "internet_gateway_id" {
-  default = "{{.variables.aws.internet_gateway_id}}"
-}
-
-variable "nat_gateways" {
-  default = [{{$c := counter}}{{range $gateway_id := .variables.aws.nat_gateways}}{{if call $c}}, {{end}}"{{$gateway_id}}"{{end}}]
+locals {
+  vpc_id = "{{.variables.aws.vpc_id}}"
+  internet_gateway_id = "{{.variables.aws.internet_gateway_id}}"
+  nat_gateways = [{{$c := counter}}{{range $gateway_id := .variables.aws.nat_gateways}}{{if call $c}}, {{end}}"{{$gateway_id}}"{{end}}]
 }
 
 {{- else -}}
@@ -43,10 +37,6 @@ resource "aws_vpc" "kubernetes" {
   tags                  = "${merge(local.common_tags, map())}"
 }
 
-variable "vpc_id" {
-  default = "${aws_vpc.kubernetes.id}"
-}
-
 resource "aws_eip" "nat" {
   count = "${length(var.azs)}"
   vpc   = true
@@ -57,10 +47,6 @@ resource "aws_internet_gateway" "kubernetes" {
   tags   = "${merge(local.common_tags, map())}"
 }
 
-variable "internet_gateway_id" {
-  default = "${aws_internet_gateway.kubernetes.id}"
-}
-
 resource "aws_nat_gateway" "kubernetes" {
   count         = "${length(var.azs)}"
   allocation_id = "${element(aws_eip.nat.*.id, count.index)}"
@@ -68,8 +54,9 @@ resource "aws_nat_gateway" "kubernetes" {
   depends_on    = ["aws_subnet.public", "aws_internet_gateway.kubernetes"]
 }
 
-variable "nat_gateways" {
-  type="list"
-  default = ["${aws_nat_gateway.kubernetes.*.id}"]
+locals {
+  vpc_id = "${aws_vpc.kubernetes.id}"
+  internet_gateway_id = "${aws_internet_gateway.kubernetes.id}"
+  nat_gateways = ["${aws_nat_gateway.kubernetes.*.id}"]
 }
 {{- end }}
