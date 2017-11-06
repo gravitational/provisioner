@@ -25,5 +25,5 @@ TELEKUBE_SERVICE=`aws ssm get-parameter --name /telekube/${cluster_name}/service
 curl -k -o /tmp/gravity $${TELEKUBE_SERVICE}/telekube/gravity
 chmod +x /tmp/gravity
 
-# In AWS mode gravity will discover the data from AWS SSM
-/tmp/gravity discover ${cluster_name} --role=knode
+# In AWS mode gravity will discover the data from AWS SSM and join the cluster
+/tmp/gravity autojoin ${cluster_name} --role=knode
