@@ -9,7 +9,7 @@ resource "aws_autoscaling_group" "nodes" {
   launch_configuration      = "${aws_launch_configuration.node.name}"
   vpc_zone_identifier       = ["${aws_subnet.private.*.id}"]
 
-  tags = "${local.asg_tags}"
+  tags = ["${local.asg_tags}"]
 
   // external autoscale algos can modify these values,
   // so ignore changes to them
