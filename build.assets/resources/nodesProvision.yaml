@@ -12,7 +12,7 @@ spec:
       - name: devdocker-registrykey
       containers:
       - name: provision
-        image: quay.io/gravitational/provisioner:XXX_PROVISIONER_VERSION_XXX
+        image: quay.io/gravitational/provisioner
         imagePullPolicy: Always
         args: ['nodes-provision']
         volumeMounts:

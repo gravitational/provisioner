@@ -1,5 +1,5 @@
 ### Build Assets
-This directory is used by Jenkins to build a sample gravity application for CI/CD testing of changes to the provisioner.
+This directory is used by Jenkins to build a sample telekube application for CI/CD testing of changes to the provisioner.
 
 To execute manually run:
 ```

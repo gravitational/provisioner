@@ -5,6 +5,10 @@ VENDORBIN = $(CURDIR)/vendor/bin
 PATH     := $(VENDORBIN):$(PATH)
 
 PROV_VERSION ?= $(shell git describe --tags 2>/dev/null ||  git rev-parse HEAD)
+
+# VERSION to be passed by jenkins for CI builds
+CI_VERSION ?= 
+
 PROV_REPO = quay.io/gravitational/provisioner
 TERRAFORM_VER ?= 0.10.8
 BUILDBOX_TAG ?= golang:1.9.0-stretch
@@ -20,6 +24,11 @@ build-provisioner: build
 .PHONY: publish-provisioner
 publish-provisioner:
 	docker push $(PROV_REPO):$(PROV_VERSION)
+
+# Publish docker image from CI, where jenkins is setting the image version
+.PHONY: publish-ci
+publish-ci:
+	docker push $(PROV_REPO):$(CI_VERSION)
 
 .PHONY: deps
 deps: vendor
