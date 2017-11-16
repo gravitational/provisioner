@@ -53,6 +53,7 @@ nodeProfiles:
     description: "Telekube Node"
     labels:
       role: node
+      node-role.kubernetes.io/master: "true"
     requirements:
       cpu:
         min: 1
