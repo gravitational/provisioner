@@ -12,7 +12,6 @@ OPS_KEY :=
 TAG :=
 TELE_FLAGS :=
 CWD := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
-APP_VERSION ?= $(shell git -C $(CWD) describe --tags)
 
 
 .PHONY: ci
@@ -24,7 +23,7 @@ ci: tele-login
 	tele $(TELE_FLAGS) build \
         --skip-version-check \
 		--output="$(TMP)/installer.tar" \
-		--version="$(APP_VERSION)" \
+		--version="0.0.0-$(TAG)" \
 		--overwrite "$(TMP)/resources/app.yaml" --repository="https://$(OPS_URL)"
 	tele $(TELE_FLAGS) push --force "$(TMP)/installer.tar"
 	rm -r $(TMP)
