@@ -22,13 +22,17 @@ CWD := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 .PHONY: ci
 ci: tele-login
 	$(eval TMP := $(shell mktemp -d))
+	mkdir -p $(TMP)/resources/
+	cp $(CWD)/resources/* $(TMP)/resources/
+	find $(TMP)/resources/ -type f -name '*.yaml' -exec sed -i 's|XXX_PROVISIONER_VERSION_XXX|$(TAG)|' {} \;
 	tele $(TELE_FLAGS) build \
         	--skip-version-check \
 		--output="$(TMP)/installer.tar" \
 		--version="1.0.0-$(TAG)" \
-		--overwrite "$(CWD)/resources/app.yaml" \
+		--overwrite \
 		--repository="https://$(OPS_URL)" \
-		--set-image=quay.io/gravitational/provisioner:$(TAG)
+		--set-image=quay.io/gravitational/provisioner:$(TAG) \
+		"$(TMP)/resources/app.yaml"
 	tele $(TELE_FLAGS) push --force "$(TMP)/installer.tar"
 	rm -r $(TMP)
 

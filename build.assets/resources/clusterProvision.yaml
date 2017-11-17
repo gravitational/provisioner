@@ -10,7 +10,7 @@ spec:
       restartPolicy: OnFailure
       containers:
       - name: provision
-        image: quay.io/gravitational/provisioner
+        image: quay.io/gravitational/provisioner:XXX_PROVISIONER_VERSION_XXX
         imagePullPolicy: Always
         args: ['cluster-provision']
         volumeMounts:
