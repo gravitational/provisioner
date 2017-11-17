@@ -5,7 +5,6 @@ VENDORBIN = $(CURDIR)/vendor/bin
 PATH     := $(VENDORBIN):$(PATH)
 
 PROV_VERSION ?= $(shell git describe --tags 2>/dev/null ||  git rev-parse HEAD)
-
 PROV_REPO = quay.io/gravitational/provisioner
 TERRAFORM_VER ?= 0.10.8
 BUILDBOX_TAG ?= golang:1.9.0-stretch

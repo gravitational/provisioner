@@ -31,7 +31,6 @@ ci: tele-login
 		--version="1.0.0-$(TAG)" \
 		--overwrite \
 		--repository="https://$(OPS_URL)" \
-		--set-image=quay.io/gravitational/provisioner:$(TAG) \
 		"$(TMP)/resources/app.yaml"
 	tele $(TELE_FLAGS) push --force "$(TMP)/installer.tar"
 	rm -r $(TMP)
