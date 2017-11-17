@@ -18,6 +18,11 @@ TAG ?=
 TELE_FLAGS :=
 CWD := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
+TELE ?= $(shell command -v tele;)
+ifndef TELE
+$(error "tele is not available, please install using this docs http://gravitational.com/docs/quickstart/#getting-the-tools")
+endif
+
 
 .PHONY: ci
 ci: tele-login
@@ -25,20 +30,20 @@ ci: tele-login
 	mkdir -p $(TMP)/resources/
 	cp $(CWD)/resources/* $(TMP)/resources/
 	find $(TMP)/resources/ -type f -name '*.yaml' -exec sed -i 's|XXX_PROVISIONER_VERSION_XXX|$(TAG)|' {} \;
-	tele $(TELE_FLAGS) build \
+	$(TELE) $(TELE_FLAGS) build \
         	--skip-version-check \
 		--output="$(TMP)/installer.tar" \
 		--version="1.0.0-$(TAG)" \
 		--overwrite \
 		--repository="https://$(OPS_URL)" \
 		"$(TMP)/resources/app.yaml"
-	tele $(TELE_FLAGS) push --force "$(TMP)/installer.tar"
+	$(TELE) $(TELE_FLAGS) push --force "$(TMP)/installer.tar"
 	rm -r $(TMP)
 
 
 .PHONY: tele-login
 tele-login: check-env
-	tele login --ops=${OPS_URL} --key=${OPS_KEY}
+	$(TELE) login --ops=${OPS_URL} --key=${OPS_KEY}
 
 .PHONY: check-env
 check-env:
