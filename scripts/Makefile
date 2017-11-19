@@ -177,7 +177,7 @@ sync-files:
 		--region=$(AWS_REGION) \
 		--cluster-bucket=$(BUCKET_NAME) \
 		--target=/mnt/state/cluster/input \
-		--prefix=cluster
+		--prefix=$(TELEKUBE_CLUSTER_NAME)/cluster
 
 
 .PHONY: terraform-init
