@@ -1,6 +1,10 @@
 #!/bin/bash
 set -xeuo pipefail
 
+# Set some curl options so that temporary failures get retried
+# More info: https://ec.haxx.se/usingcurl-timeouts.html
+CURL_OPTS="--retry 100 --retry-delay 0 --connect-timeout 10 --max-time 300"
+
 # mount all required volumes
 umount /dev/xvdb || true
 mkfs.ext4 /dev/xvdb
@@ -22,4 +26,4 @@ export SUDO_UID=1000
 export SUDO_GID=1000
 
 # This calls opscenter to start the provision k8s job
-curl --retry 100 --retry-delay 0 --connect-timeout 10 --max-time 300 --tlsv1.2 --insecure '${ops_url}/${ops_token}/node?provisioner=aws_terraform&bg=true' | bash
+curl ${CURL_OPTS} --tlsv1.2 --insecure '${ops_url}/${ops_token}/node?provisioner=aws_terraform&bg=true' | bash
