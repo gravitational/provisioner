@@ -1,0 +1,23 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: nodes-provision
+  namespace: default
+spec:
+  activeDeadlineSeconds: 240
+  template:
+    spec:
+      restartPolicy: OnFailure
+      imagePullSecrets:
+      - name: devdocker-registrykey
+      containers:
+      - name: provision
+        image: quay.io/gravitational/provisioner:XXX_PROVISIONER_VERSION_XXX
+        imagePullPolicy: Always
+        args: ['nodes-provision']
+        volumeMounts:
+        - mountPath: /mnt/state
+          name: state-volume
+      volumes:
+      - name: state-volume
+        emptyDir: {}
