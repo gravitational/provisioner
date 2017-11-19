@@ -26,4 +26,4 @@ export SUDO_UID=1000
 export SUDO_GID=1000
 
 # This calls opscenter to start the provision k8s job
-curl ${CURL_OPTS} --tlsv1.2 --insecure '${ops_url}/${ops_token}/node?provisioner=aws_terraform&bg=true' | bash
+curl $${CURL_OPTS} --tlsv1.2 --insecure '${ops_url}/${ops_token}/node?provisioner=aws_terraform&bg=true' | bash
