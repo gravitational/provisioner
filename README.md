@@ -59,7 +59,7 @@ Below are required variables for all tasks:
 * AWS_ACCESS_KEY_ID: aws access key id
 * AWS_SECRET_ACCESS_KEY: aws secret key
 * TELEKUBE_CLUSTER_NAME: telekube cluster. We will store generated
-  script in a bucket in form of **terraform-cluster-state-$(TELEKUBE_CLUSTER_NAME)**
+  script in a bucket in form of **provisioner-terraform-state/$(TELEKUBE_CLUSTER_NAME)**
 * AWS_KEY_NAME: SSH key for ec2 instance. The SSH key needs to be
   pre-created in AWS
 * TELEKUBE_OPS_TOKEN: an agent token of telekube cluster
