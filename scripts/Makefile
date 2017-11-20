@@ -37,7 +37,7 @@ AWS_INSTANCE_PRIVATE_IP ?=
 # AWS instance private DNS name of the instance to delet
 AWS_INSTANCE_PRIVATE_DNS ?=
 # S3 bucket name to keep the state
-BUCKET_NAME ?= terraform-cluster-state-$(TELEKUBE_CLUSTER_NAME)
+BUCKET_NAME ?= provisioner-terraform-state
 # directory with this makefile
 CWD := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
@@ -166,7 +166,7 @@ init-cluster:
 		--vpc-id=$(AWS_VPC_ID) \
 		--cluster-bucket=$(BUCKET_NAME) \
 		--template=$(CWD)/terraform/templates/vars.tf.template \
-		--key=cluster/vars.tf
+		--key=$(TELEKUBE_CLUSTER_NAME)/cluster/vars.tf
 
 
 # sync-files syncs files from S3 to input directory
@@ -177,7 +177,7 @@ sync-files:
 		--region=$(AWS_REGION) \
 		--cluster-bucket=$(BUCKET_NAME) \
 		--target=/mnt/state/cluster/input \
-		--prefix=cluster
+		--prefix=$(TELEKUBE_CLUSTER_NAME)/cluster
 
 
 .PHONY: terraform-init
