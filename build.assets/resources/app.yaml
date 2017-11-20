@@ -53,7 +53,10 @@ nodeProfiles:
     description: "Telekube Node"
     labels:
       role: node
-      node-role.kubernetes.io/master: "true"
+#	TODO(knisbet) it appears that setting node-role.kubernetes.io to master, removes the node from the load balancer
+#	which prevents gravity join from being able to reach the cluster
+#	https://github.com/kubernetes/kubernetes/blob/master/pkg/controller/service/service_controller.go#L614
+#      node-role.kubernetes.io/master: "true"
     requirements:
       cpu:
         min: 1
