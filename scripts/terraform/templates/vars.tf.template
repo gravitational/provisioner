@@ -51,6 +51,7 @@ resource "aws_nat_gateway" "kubernetes" {
   count         = "${length(var.azs)}"
   allocation_id = "${element(aws_eip.nat.*.id, count.index)}"
   subnet_id     = "${element(aws_subnet.public.*.id, count.index)}"
+  tags          = "${merge(local.common_tags, map())}"
   depends_on    = ["aws_subnet.public", "aws_internet_gateway.kubernetes"]
 }
 
