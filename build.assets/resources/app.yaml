@@ -49,6 +49,7 @@ installer:
             count: 1
 
 nodeProfiles:
+# node is a hardcode in the provisioner, and must be present in order to function
   - name: node
     description: "Telekube Node"
     labels:
@@ -56,6 +57,45 @@ nodeProfiles:
 #	TODO(knisbet) it appears that setting node-role.kubernetes.io to master, removes the node from the load balancer
 #	which prevents gravity join from being able to reach the cluster
 #	https://github.com/kubernetes/kubernetes/blob/master/pkg/controller/service/service_controller.go#L614
+#      node-role.kubernetes.io/master: "true"
+    requirements:
+      cpu:
+        min: 1
+      ram:
+        min: "2GB"
+      os:
+        - name: centos
+          versions: ["7"]
+      volumes:
+        - path: /var/lib/gravity
+          capacity: "10GB"
+          filesystems: ["xfs", "ext4"]
+    providers:
+      aws:
+        instanceTypes:
+          - c4.large
+          - c4.xlarge
+          - c4.2xlarge
+          - c4.4xlarge
+          - c4.8xlarge
+          - m4.large
+          - m4.xlarge
+          - m4.2xlarge
+          - m4.4xlarge
+          - m4.10xlarge
+          - m4.16xlarge
+          - t2.medium
+          - t2.large
+          - t2.xlarge
+          - t2.2xlarge
+# knode is a hardcode in the provisioner, and must be present for the provisioner to function
+  - name: knode
+    description: "Telekube Node"
+    labels:
+      role: node
+#       TODO(knisbet) it appears that setting node-role.kubernetes.io to master, removes the node from the load balancer
+#       which prevents gravity join from being able to reach the cluster
+#       https://github.com/kubernetes/kubernetes/blob/master/pkg/controller/service/service_controller.go#L614
 #      node-role.kubernetes.io/master: "true"
     requirements:
       cpu:
