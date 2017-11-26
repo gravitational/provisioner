@@ -4,7 +4,7 @@ metadata:
   name: provision
   namespace: default
 spec:
-  activeDeadlineSeconds: 240
+  activeDeadlineSeconds: 600
   template:
     spec:
       restartPolicy: OnFailure
