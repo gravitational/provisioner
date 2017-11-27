@@ -4,7 +4,7 @@ metadata:
   name: nodes-provision
   namespace: default
 spec:
-  activeDeadlineSeconds: 240
+  activeDeadlineSeconds: 300
   template:
     spec:
       restartPolicy: OnFailure
