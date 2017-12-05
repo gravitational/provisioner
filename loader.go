@@ -23,6 +23,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const (
+	// AwsOperationTimeout is the amount of time to wait for calls to AWS to complete
+	AwsOperationTimeout = 30 * time.Second
+)
+
 // Loader governs process of inspecting VPC and generating TerraForm template
 // We support 2 modes of loading
 //   * load with an existing VPC: in this case, we will re-use nat gateway,
@@ -349,7 +354,7 @@ func (l *Loader) loadVPC() (*ec2.Vpc, error) {
 
 // UpsertBucket upserts bucket if it does not exist
 func (l *Loader) UpsertBucket() error {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), AwsOperationTimeout)
 	defer cancel()
 
 	input := &s3.CreateBucketInput{
@@ -412,7 +417,7 @@ func (l *Loader) PutKey(bucketName, bucketKey string, out io.ReadSeeker, content
 }
 
 func (l *Loader) initVars(bucketKey string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), AwsOperationTimeout)
 	defer cancel()
 
 	err := l.UpsertBucket()
@@ -442,7 +447,7 @@ func (l *Loader) initVars(bucketKey string) error {
 }
 
 func (l *Loader) sync(paths []string, targetDir string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), AwsOperationTimeout)
 	defer cancel()
 
 	err := os.MkdirAll(targetDir, 0755)
@@ -476,7 +481,7 @@ func (l *Loader) sync(paths []string, targetDir string) error {
 }
 
 func (l *Loader) rm(key string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), AwsOperationTimeout)
 	defer cancel()
 
 	params := &s3.DeleteObjectInput{
