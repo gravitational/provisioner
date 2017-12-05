@@ -3,6 +3,7 @@ package provisioner
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -11,6 +12,7 @@ import (
 	"regexp"
 	"strings"
 	"text/template"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -347,11 +349,14 @@ func (l *Loader) loadVPC() (*ec2.Vpc, error) {
 
 // UpsertBucket upserts bucket if it does not exist
 func (l *Loader) UpsertBucket() error {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
 	input := &s3.CreateBucketInput{
 		Bucket: aws.String(l.ClusterBucket),
 		ACL:    aws.String("private"),
 	}
-	_, err := l.CreateBucket(input)
+	_, err := l.CreateBucketWithContext(ctx, input)
 	err = awsutil.ConvertS3Error(err, "bucket %s already exists", aws.String(l.ClusterBucket))
 	if err != nil {
 		if !trace.IsAlreadyExists(err) {
@@ -364,7 +369,7 @@ func (l *Loader) UpsertBucket() error {
 			Status: aws.String("Enabled"),
 		},
 	}
-	_, err = l.PutBucketVersioning(ver)
+	_, err = l.PutBucketVersioningWithContext(ctx, ver)
 	err = awsutil.ConvertS3Error(err, "failed to set versioning state for bucket %s", aws.String(l.ClusterBucket))
 	if err != nil {
 		return err
@@ -373,12 +378,12 @@ func (l *Loader) UpsertBucket() error {
 }
 
 // GetKey downloads key if it exists, otherwise returns NotFound
-func (l *Loader) GetKey(bucketName, bucketKey string) ([]byte, error) {
+func (l *Loader) GetKey(ctx context.Context, bucketName, bucketKey string) ([]byte, error) {
 	input := &s3.GetObjectInput{
 		Bucket: aws.String(bucketName),
 		Key:    aws.String(bucketKey),
 	}
-	result, err := l.GetObject(input)
+	result, err := l.GetObjectWithContext(ctx, input)
 	if err != nil {
 		return nil, awsutil.ConvertS3Error(err)
 	}
@@ -407,11 +412,14 @@ func (l *Loader) PutKey(bucketName, bucketKey string, out io.ReadSeeker, content
 }
 
 func (l *Loader) initVars(bucketKey string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
 	err := l.UpsertBucket()
 	if err != nil {
 		return trace.Wrap(err)
 	}
-	data, err := l.GetKey(l.ClusterBucket, bucketKey)
+	_, err = l.GetKey(ctx, l.ClusterBucket, bucketKey)
 	if err == nil {
 		log.Printf("found vars in s3://%v/%v", l.ClusterBucket, bucketKey)
 		return nil
@@ -420,7 +428,7 @@ func (l *Loader) initVars(bucketKey string) error {
 		return trace.Wrap(err, "failed to load key: %v", bucketKey)
 	}
 	log.Printf("key is not found, going to generate data from AWS")
-	data, err = l.load()
+	data, err := l.load()
 
 	if err != nil {
 		return trace.Wrap(err, "failed to load data from AWS")
@@ -434,6 +442,9 @@ func (l *Loader) initVars(bucketKey string) error {
 }
 
 func (l *Loader) sync(paths []string, targetDir string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
 	err := os.MkdirAll(targetDir, 0755)
 	if err != nil {
 		return trace.ConvertSystemError(err)
@@ -443,14 +454,14 @@ func (l *Loader) sync(paths []string, targetDir string) error {
 			Bucket: aws.String(l.ClusterBucket),
 			Prefix: aws.String(path),
 		}
-		resp, err := l.ListObjects(params)
+		resp, err := l.ListObjectsWithContext(ctx, params)
 		if err != nil {
 			return trace.Wrap(err)
 		}
 		for _, key := range resp.Contents {
 			targetFile := filepath.Join(targetDir, filepath.Base(*key.Key))
 			log.Printf("syncing s3://%v/%v to %v", l.ClusterBucket, *key.Key, targetFile)
-			data, err := l.GetKey(l.ClusterBucket, *key.Key)
+			data, err := l.GetKey(ctx, l.ClusterBucket, *key.Key)
 			if err != nil {
 				return trace.Wrap(err)
 			}
@@ -465,11 +476,14 @@ func (l *Loader) sync(paths []string, targetDir string) error {
 }
 
 func (l *Loader) rm(key string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
 	params := &s3.DeleteObjectInput{
 		Bucket: aws.String(l.ClusterBucket),
 		Key:    aws.String(key),
 	}
-	_, err := l.DeleteObject(params)
+	_, err := l.DeleteObjectWithContext(ctx, params)
 	if err == nil {
 		log.Printf("removed key s3://%v/%v", l.ClusterBucket, key)
 	}
