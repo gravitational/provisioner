@@ -447,18 +447,25 @@ func (l *Loader) initVars(bucketKey string) error {
 }
 
 func (l *Loader) sync(paths []string, targetDir string) error {
+	log.Debug("starting sync operation")
 	ctx, cancel := context.WithTimeout(context.Background(), AwsOperationTimeout)
 	defer cancel()
 
+	log.WithField("targetDir", targetDir).Debug("creating target directory")
 	err := os.MkdirAll(targetDir, 0755)
 	if err != nil {
 		return trace.ConvertSystemError(err)
 	}
+
 	for _, path := range paths {
 		params := &s3.ListObjectsInput{
 			Bucket: aws.String(l.ClusterBucket),
 			Prefix: aws.String(path),
 		}
+		log.WithFields(log.Fields{
+			"Bucket": params.Bucket,
+			"Prefix": params.Prefix,
+		}).Debug("listing objects")
 		resp, err := l.ListObjectsWithContext(ctx, params)
 		if err != nil {
 			return trace.Wrap(err)
@@ -477,6 +484,8 @@ func (l *Loader) sync(paths []string, targetDir string) error {
 		}
 
 	}
+
+	log.Debug("sync complete")
 	return nil
 }
 
