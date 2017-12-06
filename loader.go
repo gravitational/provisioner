@@ -24,8 +24,8 @@ import (
 )
 
 const (
-	// AwsOperationTimeout is the amount of time to wait for calls to AWS to complete
-	AwsOperationTimeout = 30 * time.Second
+	// AWSOperationTimeout is the amount of time to wait for calls to AWS to complete
+	AWSOperationTimeout = 30 * time.Second
 )
 
 // Loader governs process of inspecting VPC and generating TerraForm template
@@ -354,7 +354,7 @@ func (l *Loader) loadVPC() (*ec2.Vpc, error) {
 
 // UpsertBucket upserts bucket if it does not exist
 func (l *Loader) UpsertBucket() error {
-	ctx, cancel := context.WithTimeout(context.Background(), AwsOperationTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), AWSOperationTimeout)
 	defer cancel()
 
 	input := &s3.CreateBucketInput{
@@ -417,7 +417,7 @@ func (l *Loader) PutKey(bucketName, bucketKey string, out io.ReadSeeker, content
 }
 
 func (l *Loader) initVars(bucketKey string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), AwsOperationTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), AWSOperationTimeout)
 	defer cancel()
 
 	err := l.UpsertBucket()
@@ -448,7 +448,7 @@ func (l *Loader) initVars(bucketKey string) error {
 
 func (l *Loader) sync(paths []string, targetDir string) error {
 	log.Debug("starting sync operation")
-	ctx, cancel := context.WithTimeout(context.Background(), AwsOperationTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), AWSOperationTimeout)
 	defer cancel()
 
 	log.WithField("targetDir", targetDir).Debug("creating target directory")
@@ -490,7 +490,7 @@ func (l *Loader) sync(paths []string, targetDir string) error {
 }
 
 func (l *Loader) rm(key string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), AwsOperationTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), AWSOperationTimeout)
 	defer cancel()
 
 	params := &s3.DeleteObjectInput{
