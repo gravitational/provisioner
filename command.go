@@ -159,6 +159,9 @@ func (c *Command) Run(args []string) error {
 	var err error
 	invokedCommad, err := c.App.Parse(args)
 
+	// temporarily set the log level to debug
+	log.SetLevel(log.DebugLevel)
+
 	if err != nil {
 		return trace.Wrap(err)
 	}
