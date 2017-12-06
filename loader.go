@@ -51,7 +51,8 @@ type LoaderConfig struct {
 // NewLoader initializes Loader from a LoadConfig and related AWS Service
 func NewLoader(config LoaderConfig) (*Loader, error) {
 	sess, err := session.NewSession(&aws.Config{
-		Region: aws.String(config.Region),
+		Region:   aws.String(config.Region),
+		LogLevel: aws.LogLevel(aws.LogDebug),
 	})
 	if err != nil {
 		return nil, trace.Wrap(err)
