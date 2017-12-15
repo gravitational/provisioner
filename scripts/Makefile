@@ -214,7 +214,7 @@ terraform-plan:
 #
 .PHONY: terraform-apply
 terraform-apply:
-	cd '/mnt/state/cluster' && terraform apply
+	cd '/mnt/state/cluster' && terraform apply -auto-approve
 
 #
 # terraform-destroy destroys the provisioned cluster
