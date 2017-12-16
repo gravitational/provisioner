@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/gravitational/trace"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/alecthomas/kingpin.v2"
 )
 
@@ -171,6 +172,10 @@ func (c *Command) Run(args []string) error {
 		err = c.findInstance.perform(*c.cfg)
 	case c.removeS3Key.FullCommand():
 		err = c.removeS3Key.perform(*c.cfg)
+	}
+
+	if err != nil {
+		log.Error("failed to run command: ", trace.DebugReport(err))
 	}
 
 	return err
