@@ -16,7 +16,7 @@ variable "aws_max_retries" {
 }
 
 provider "aws" {
-  version                 = "~> 1.5"
+  version                 = "~> 1.6"
   region                  = "${var.aws_region}"
   shared_credentials_file = "/var/lib/telekube/aws-credentials"
   profile                 = "default"
