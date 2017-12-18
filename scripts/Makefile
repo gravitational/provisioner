@@ -41,6 +41,9 @@ BUCKET_NAME ?= provisioner-terraform-state
 # directory with this makefile
 CWD := $(shell dirname $(realpath $(lastword $(MAKEFILE_LIST))))
 
+# TF options
+TF_FLAGS ?= -input -no-color
+
 # export terraform variables
 TF_VAR_bucket_name := $(BUCKET_NAME)
 TF_VAR_aws_region ?= $(AWS_REGION)
@@ -200,32 +203,37 @@ terraform-remove-instance:
 	cd /mnt/state/cluster && terraform show | inspect find-instance --private-ip=$(AWS_INSTANCE_PRIVATE_IP) > /mnt/state/cluster/instance-to-remove
 	export RESOURCE_NAME=$$(cat /mnt/state/cluster/instance-to-remove) &&  \
 	echo "going to remove instance: $$RESOURCE_NAME" && \
-	cd /mnt/state/cluster && terraform destroy --force --target="$$RESOURCE_NAME"
+	cd /mnt/state/cluster && \
+		terraform destroy $(TF_FLAGS) --force --target="$$RESOURCE_NAME"
 
 #
 # terraform-plan runs terraform plan on the cluster
 #
 .PHONY: terraform-plan
 terraform-plan:
-	cd '/mnt/state/cluster' && terraform plan
+	cd '/mnt/state/cluster' && \
+		terraform plan $(TF_FLAGS)
 
 #
 # terraform-apply updates the existing infrastructure
 #
 .PHONY: terraform-apply
 terraform-apply:
-	cd '/mnt/state/cluster' && terraform apply
+	cd '/mnt/state/cluster' && \
+		terraform apply $(TF_FLAGS) -auto-approve
 
 #
 # terraform-destroy destroys the provisioned cluster
 #
 .PHONY: terraform-destroy
 terraform-destroy:
-	cd '/mnt/state/cluster' && terraform destroy --force
+	cd '/mnt/state/cluster' && \
+		terraform destroy $(TF_FLAGS) --force
 
 #
 # terraform-destroy-instance destroys one instance
 #
 .PHONY: terraform-destroy-instance
 terraform-destroy-instance:
-	cd '/mnt/state/cluster' && terraform destroy --target
+	cd '/mnt/state/cluster' && \
+		terraform destroy $(TF_FLAGS) --target
