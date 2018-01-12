@@ -55,6 +55,11 @@ TF_VAR_node_count ?= $(TELEKUBE_NODE_PROFILE_COUNT_node)
 TF_VAR_node_instance_type ?= $(TELEKUBE_NODE_PROFILE_INSTANCE_TYPE_node)
 export
 
+# Older versions of the ops center may not pass DRY RUN, so default it to false
+if [ -z "$(DRY_RUN)" ]; then
+	DRY_RUN := "false"
+fi;
+
 
 # echo prints all variables used in excluding secrets
 .PHONY: echo
@@ -72,6 +77,7 @@ echo:
 	@echo "Node profiles:       $(TELEKUBE_NODE_PROFILES)"
 	@echo "Node count:          $(TELEKUBE_NODE_PROFILE_COUNT_node)"
 	@echo "Node instance type:  $(TELEKUBE_NODE_PROFILE_INSTANCE_TYPE_node)"
+	@echo "Dry Run:             $(dry-run)"
 
 #
 # echo prints all variables excluding secrets
@@ -88,6 +94,7 @@ echo-nodes-deprovision:
 	@echo "Instance Private IP:  $(AWS_INSTANCE_PRIVATE_IP)"
 	@echo "Instance Private DNS: $(AWS_INSTANCE_PRIVATE_DNS)"
 	@echo "Node count:           $(TELEKUBE_NODE_PROFILE_COUNT_node)"
+	@echo "Dry Run:              $(DRY_RUN)"
 
 #
 # clean-state cleans up temporary cluster state directory
@@ -219,21 +226,33 @@ terraform-plan:
 #
 .PHONY: terraform-apply
 terraform-apply:
-	cd '/mnt/state/cluster' && \
-		terraform apply $(TF_FLAGS) -auto-approve
+	if [ "$(DRY_RUN)" -eq "false" ]; then
+		cd '/mnt/state/cluster' && \
+			terraform apply $(TF_FLAGS) -auto-approve
+	else
+		cd '/mnt/state/cluster' && \
+			terraform plan $(TF_FLAGS)
 
 #
 # terraform-destroy destroys the provisioned cluster
 #
 .PHONY: terraform-destroy
 terraform-destroy:
-	cd '/mnt/state/cluster' && \
-		terraform destroy $(TF_FLAGS) --force
+	if [ "$(DRY_RUN)" -eq "false" ]; then
+		cd '/mnt/state/cluster' && \
+			terraform destroy $(TF_FLAGS) --force
+	else
+		cd '/mnt/state/cluster' && \
+			terraform plan $(TF_FLAGS) --destroy
 
 #
 # terraform-destroy-instance destroys one instance
 #
 .PHONY: terraform-destroy-instance
 terraform-destroy-instance:
-	cd '/mnt/state/cluster' && \
-		terraform destroy $(TF_FLAGS) --target
+	if [ "$(DRY_RUN)" -eq "false" ]; then
+		cd '/mnt/state/cluster' && \
+			terraform destroy $(TF_FLAGS) --target
+	else
+		cd '/mnt/state/cluster' && \
+			terraform plan $(TF_FLAGS) --destroy --target
