@@ -44,13 +44,6 @@ resource "aws_iam_role_policy" "master" {
             "Resource": [
                 "*"
             ]
-        },
-        {
-            "Effect": "Allow",
-            "Action": "s3:*",
-            "Resource": [
-                "arn:aws:s3:::kubernetes-*"
-            ]
         }
     ]
 }
@@ -130,13 +123,6 @@ resource "aws_iam_role_policy" "node" {
 {
     "Version": "2012-10-17",
     "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": "s3:*",
-            "Resource": [
-                "arn:aws:s3:::kubernetes-*"
-            ]
-        },
         {
             "Effect": "Allow",
             "Action": [
