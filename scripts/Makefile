@@ -142,21 +142,7 @@ cluster-deprovision:
 .PHONY: nodes-deprovision
 nodes-deprovision:
 	$(MAKE) fix-s3-backend
-	SHELL=/bin/bash
-
-	# Find the existing node
-	$(eval nodeToDelete=`aws --region ${AWS_REGION} --profile default ec2 describe-instances --filters "Name=private-ip-address,Values=${AWS_INSTANCE_PRIVATE_IP}" "Name=tag:Name,Values=${TELEKUBE_CLUSTER_NAME}" --query "Reservations[0].Instances[0].InstanceId" | sed 's/\"//g'`)
-	@echo "nodeToDelete: " ${nodeToDelete}
-	# Find out if it's a member of an autoscaling group
-	$(eval scalinggroup=$(shell aws --region ${AWS_REGION} --profile default autoscaling describe-auto-scaling-instances --instance-ids ${nodeToDelete} --query "AutoScalingInstances[0].AutoScalingGroupName"))
-	@echo "scalinggroup: " ${scalinggroup}
-
-ifeq (${scalinggroup},"null")
-	aws --region ${AWS_REGION} ec2 terminate-instances --instance-ids ${nodeToDelete}
-else
-	aws --region ${AWS_REGION} autoscaling terminate-instance-in-auto-scaling-group --instance-id ${nodeToDelete} --should-decrement-desired-capacity
-endif
-
+	./scale-down.sh
 
 #
 # nodes-provision provisions nodes
@@ -164,13 +150,7 @@ endif
 .PHONY: nodes-provision
 nodes-provision:
 	$(MAKE) fix-s3-backend
-	SHELL=/bin/bash
-
-	$(eval currentCapacity=$(shell aws --debug --region ${AWS_REGION} --profile default autoscaling describe-auto-scaling-groups --auto-scaling-group-names ${TELEKUBE_CLUSTER_NAME} --query "AutoScalingGroups[0].DesiredCapacity"))
-	@echo "current: " ${currentCapacity}
-	$(eval desiredCapacity=`expr ${currentCapacity} + ${TELEKUBE_NODE_PROFILE_ADD_COUNT_node}` )
-	@echo "desired: " ${desiredCapacity}
-	aws --debug --region ${AWS_REGION} --profile default autoscaling set-desired-capacity --auto-scaling-group-name ${TELEKUBE_CLUSTER_NAME} --desired-capacity ${desiredCapacity}
+	./scale-up.sh
 
 # this is a workaround for bug https://github.com/hashicorp/terraform/issues/13589
 .PHONY: fix-s3-backend
