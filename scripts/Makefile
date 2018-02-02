@@ -141,20 +141,16 @@ cluster-deprovision:
 #
 .PHONY: nodes-deprovision
 nodes-deprovision:
-	$(MAKE) echo-nodes-deprovision
 	$(MAKE) fix-s3-backend
-	$(MAKE) clean-state
-	$(MAKE) sync-files
-	$(MAKE) terraform-init
-	$(MAKE) terraform-remove-instance
-
+	./scale-down.sh
 
 #
 # nodes-provision provisions nodes
 #
 .PHONY: nodes-provision
 nodes-provision:
-	$(MAKE) cluster-provision
+	$(MAKE) fix-s3-backend
+	./scale-up.sh
 
 # this is a workaround for bug https://github.com/hashicorp/terraform/issues/13589
 .PHONY: fix-s3-backend
