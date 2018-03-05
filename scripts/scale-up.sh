@@ -7,9 +7,6 @@ set -x
 # and then increasing the desired capacity by 1 server
 #
 
-ls -l $HOME/.aws
-cat $HOME/.aws/credentials
-
 currentCapacity=`aws --region ${AWS_REGION} --profile default autoscaling describe-auto-scaling-groups --auto-scaling-group-names ${TELEKUBE_CLUSTER_NAME} --query "AutoScalingGroups[0].DesiredCapacity"`
 echo "current: " ${currentCapacity}
 desiredCapacity=`expr ${currentCapacity} + ${TELEKUBE_NODE_PROFILE_ADD_COUNT_node}`
