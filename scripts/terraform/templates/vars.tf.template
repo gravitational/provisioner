@@ -24,6 +24,11 @@ locals {
   nat_gateways = [{{$c := counter}}{{range $gateway_id := .variables.aws.nat_gateways}}{{if call $c}}, {{end}}"{{$gateway_id}}"{{end}}]
 }
 
+resource "aws_vpc" "kubernetes" {
+  id 	= "{{.variables.aws.vpc_id}}"
+  tags  = "${merge(local.common_tags, map())}"
+}
+
 {{- else -}}
 
 variable "vpc_cidr" {
