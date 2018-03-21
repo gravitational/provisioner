@@ -20,6 +20,7 @@ resource "aws_instance" "master" {
   ebs_optimized               = true
   user_data                   = "${data.template_file.user_data.rendered}"
   tags                        = "${merge(local.common_tags, map())}"
+  volume_tags                 = "${merge(local.common_tags, map())}"
 
   lifecycle {
     ignore_changes = ["user_data", "instance_type"]
