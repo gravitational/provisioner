@@ -114,14 +114,14 @@ func (l *Loader) load() ([]byte, error) {
 		return nil, trace.Wrap(err)
 	}
 
-	log.Debugf("loaded internet gateway: %v", internetGateway)
+	log.Printf("loaded internet gateway: %v", internetGateway)
 
 	natGateways, err := l.loadNatGateways()
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
 
-	log.Debugf("loaded nat gateways: %v", natGateways)
+	log.Printf("loaded nat gateways: %v", natGateways)
 
 	// collect public subnets information associated
 	// with nat gateways, so we can set routing properly
@@ -134,7 +134,7 @@ func (l *Loader) load() ([]byte, error) {
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
-	log.Debugf("loaded subnets: %v", subnets)
+	log.Printf("loaded subnets: %v", subnets)
 
 	// detect regions
 	var regionName string
@@ -151,7 +151,7 @@ func (l *Loader) load() ([]byte, error) {
 	if err != nil {
 		return nil, trace.Wrap(err)
 	}
-	log.Debugf("computed subnet ranges: %v", privateSubnets, publicSubnets)
+	log.Printf("computed subnet ranges: %v", privateSubnets, publicSubnets)
 
 	tpl, err := l.loadTemplate()
 	if err != nil {
@@ -417,24 +417,11 @@ func (l *Loader) PutKey(bucketName, bucketKey string, out io.ReadSeeker, content
 }
 
 func (l *Loader) initVars(bucketKey string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), AWSOperationTimeout)
-	defer cancel()
-
 	err := l.UpsertBucket()
 	if err != nil {
 		return trace.Wrap(err)
 	}
-	_, err = l.GetKey(ctx, l.ClusterBucket, bucketKey)
-	if err == nil {
-		log.Printf("found vars in s3://%v/%v", l.ClusterBucket, bucketKey)
-		return nil
-	}
-	if !trace.IsNotFound(err) {
-		return trace.Wrap(err, "failed to load key: %v", bucketKey)
-	}
-	log.Printf("key is not found, going to generate data from AWS")
 	data, err := l.load()
-
 	if err != nil {
 		return trace.Wrap(err, "failed to load data from AWS")
 	}
