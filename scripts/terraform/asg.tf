@@ -15,6 +15,7 @@ resource "aws_autoscaling_group" "nodes" {
   // so ignore changes to them
   lifecycle {
     ignore_changes = ["desired_capacity", "max_size", "min_size"]
+    create_before_destroy = true
   }
 }
 
@@ -51,6 +52,10 @@ resource "aws_launch_configuration" "node" {
     device_name           = "/dev/xvdb"
     iops                  = 500
   }
+
+  lifecycle {
+    create_before_destroy = true
+  }  
 }
 
 resource "aws_autoscaling_lifecycle_hook" "launching" {
