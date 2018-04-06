@@ -28,7 +28,7 @@ data "template_file" "node_user_data" {
 }
 
 resource "aws_launch_configuration" "node" {
-  name                        = "${var.cluster_name}"
+  name_prefix                 = "${var.cluster_name}-lc-"
   image_id                    = "${data.aws_ami.base.id}"
   instance_type               = "${var.node_instance_type}"
   user_data                   = "${data.template_file.node_user_data.rendered}"
