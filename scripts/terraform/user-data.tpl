@@ -20,6 +20,8 @@ mount /var/lib/gravity/planet/etcd
 chown -R 1000:1000 /var/lib/gravity /var/lib/gravity/planet/etcd
 
 # Explicitly configure required parameters
+modprobe iptable_nat || true
+modprobe iptable_filter || true
 modprobe overlay || true
 modprobe br_netfilter || true
 modprobe ebtable_filter || true
