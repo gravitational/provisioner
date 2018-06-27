@@ -34,6 +34,8 @@ if sysctl -q fs.may_detach_mounts >/dev/null 2>&1; then
 fi
 
 cat > /etc/modules-load.d/telekube.conf <<EOF
+iptable_nat
+iptable_filter
 br_netfilter
 overlay
 ebtable_filter
