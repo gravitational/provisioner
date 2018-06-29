@@ -26,6 +26,8 @@ EC2_REGION="`echo \"$EC2_AVAIL_ZONE\" | sed -e 's:\([0-9][0-9]*\)[a-z]*\$:\\1:'`
 TELEKUBE_SERVICE=`aws ssm get-parameter --name /telekube/${cluster_name}/service --region $EC2_REGION --query 'Parameter.Value' --output text`
 
 # Explicitly configure required parameters
+modprobe iptable_nat || true
+modprobe iptable_filter || true
 modprobe overlay || true
 modprobe br_netfilter || true
 modprobe ebtable_filter || true
@@ -38,6 +40,8 @@ if sysctl -q fs.may_detach_mounts >/dev/null 2>&1; then
 fi
 
 cat > /etc/modules-load.d/telekube.conf <<EOF
+iptable_nat
+iptable_filter
 br_netfilter
 overlay
 ebtable_filter
