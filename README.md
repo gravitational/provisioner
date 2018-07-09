@@ -130,8 +130,6 @@ used to override the templates:
     * public_subnets: an array of string of public subnets CIDR
     * region: AWS region the VPC belongs to
     * vpc_id: VPC id, can be empty  if the new VPC is to be created
-    * internet_gateway_id: internet gateway id, can be empty when not
-      passing VPC ID
     * nat_gateways: an array of NAT gateway as strings on each of
       availabity zone, can be empty when not passing VPC ID
     * azs: an array of string of availability zones
@@ -196,6 +194,3 @@ Nodes provisioned via Auto Scaling group use this information to discover the cl
 Provisioner scripts create IAM policies for nodes to read the SSM parameters and for master nodes to publish parameters to the store.
 
 Master nodes are not part of the auto scaling group and are managed separately.
-
-
-

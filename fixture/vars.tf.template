@@ -1,10 +1,12 @@
 // these variables are loaded from
 // existing AWS environment and VPC
 
+// https://www.terraform.io/docs/providers/aws/d/availability_zones.html
 variable "azs" {
    default = [{{$c := counter}}{{range $idx, $az := .variables.aws.azs}}{{if call $c}}, {{end}}"{{$az}}"{{end}}]
 }
 
+// https://www.terraform.io/docs/providers/aws/d/subnet_ids.html
 variable "subnets" {
    default = [{{$c := counter}}{{range $idx, $subnet := .variables.aws.subnets}}{{if call $c}}, {{end}}"{{$subnet}}"{{end}}]
 }
@@ -18,16 +20,22 @@ variable "aws_region" {
 }
 
 {{ if .variables.aws.vpc_id -}}
-variable "vpc_id" {
-  default = "{{.variables.aws.vpc_id}}"
+data "aws_internet_gateway" "default" {
+  filter {
+    name = "attachment.vpc-id"
+    values = ["{{.variables.aws.vpc_id}}"]
+  }
+
+  filter {
+    name = "attachment.state"
+    values = ["available"]
+  }
 }
 
-variable "internet_gateway_id" {
-  default = "{{.variables.aws.internet_gateway_id}}"
-}
-
-variable "nat_gateways" {
-  default = [{{$c := counter}}{{range $gateway_id := .variables.aws.nat_gateways}}{{if call $c}}, {{end}}"{{$gateway_id}}"{{end}}]
+locals {
+  vpc_id = "{{.variables.aws.vpc_id}}"
+  internet_gateway_id = "${data.aws_internet_gateway.default.id}"
+  nat_gateways = [{{$c := counter}}{{range $gateway_id := .variables.aws.nat_gateways}}{{if call $c}}, {{end}}"{{$gateway_id}}"{{end}}]
 }
 
 {{- else -}}
@@ -43,10 +51,6 @@ resource "aws_vpc" "kubernetes" {
   tags                  = "${merge(local.common_tags, map())}"
 }
 
-variable "vpc_id" {
-  default = "${aws_vpc.kubernetes.id}"
-}
-
 resource "aws_eip" "nat" {
   count = "${length(var.azs)}"
   vpc   = true
@@ -57,19 +61,17 @@ resource "aws_internet_gateway" "kubernetes" {
   tags   = "${merge(local.common_tags, map())}"
 }
 
-variable "internet_gateway_id" {
-  default = "${aws_internet_gateway.kubernetes.id}"
-}
-
 resource "aws_nat_gateway" "kubernetes" {
   count         = "${length(var.azs)}"
   allocation_id = "${element(aws_eip.nat.*.id, count.index)}"
   subnet_id     = "${element(aws_subnet.public.*.id, count.index)}"
+  tags          = "${merge(local.common_tags, map())}"
   depends_on    = ["aws_subnet.public", "aws_internet_gateway.kubernetes"]
 }
 
-variable "nat_gateways" {
-  type="list"
-  default = ["${aws_nat_gateway.kubernetes.*.id}"]
+locals {
+  vpc_id = "${aws_vpc.kubernetes.id}"
+  internet_gateway_id = "${aws_internet_gateway.kubernetes.id}"
+  nat_gateways = ["${aws_nat_gateway.kubernetes.*.id}"]
 }
 {{- end }}

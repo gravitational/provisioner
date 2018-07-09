@@ -109,13 +109,6 @@ func (l *Loader) load() ([]byte, error) {
 		return l.templateForNewVPC()
 	}
 
-	internetGateway, err := l.loadInternetGateway()
-	if err != nil {
-		return nil, trace.Wrap(err)
-	}
-
-	log.Debugf("loaded internet gateway: %v", internetGateway)
-
 	natGateways, err := l.loadNatGateways()
 	if err != nil {
 		return nil, trace.Wrap(err)
@@ -169,7 +162,6 @@ func (l *Loader) load() ([]byte, error) {
 	awsVars["public_subnets"] = publicSubnets
 	awsVars["region"] = regionName
 	awsVars["vpc_id"] = l.VPCID
-	awsVars["internet_gateway_id"] = *(internetGateway.InternetGatewayId)
 
 	// build nat gateway per AZ map
 	natGatewayIDs := []string{}
@@ -304,29 +296,6 @@ func (l *Loader) loadNatGateways() ([]*ec2.NatGateway, error) {
 		return nil, trace.NotFound("no nat gateways found")
 	}
 	return out.NatGateways, nil
-}
-
-// loadInternetGateway finds current internet gateway of VPC
-func (l *Loader) loadInternetGateway() (*ec2.InternetGateway, error) {
-	params := &ec2.DescribeInternetGatewaysInput{
-		Filters: []*ec2.Filter{
-			{ // Required
-				Name: aws.String("attachment.vpc-id"),
-				Values: []*string{
-					aws.String(l.VPCID),
-				},
-			},
-		},
-	}
-	req, out := l.EC2.DescribeInternetGatewaysRequest(params)
-	if err := req.Send(); err != nil {
-		return nil, trace.Wrap(err)
-	}
-	if len(out.InternetGateways) == 0 {
-		return nil, trace.NotFound("no internet gateways found")
-	}
-
-	return out.InternetGateways[0], nil
 }
 
 // loadVPC fetchs ec2.Vpc structs from our vpc id

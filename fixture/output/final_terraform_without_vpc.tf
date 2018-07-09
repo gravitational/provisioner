@@ -1,10 +1,12 @@
 // these variables are loaded from
 // existing AWS environment and VPC
 
+// https://www.terraform.io/docs/providers/aws/d/availability_zones.html
 variable "azs" {
    default = ["us-west-1", "us-west-2", "us-west-3"]
 }
 
+// https://www.terraform.io/docs/providers/aws/d/subnet_ids.html
 variable "subnets" {
    default = ["10.1.0.0/24", "10.1.2.0/24", "10.1.4.0/24"]
 }
@@ -28,10 +30,6 @@ resource "aws_vpc" "kubernetes" {
   tags                  = "${merge(local.common_tags, map())}"
 }
 
-variable "vpc_id" {
-  default = "${aws_vpc.kubernetes.id}"
-}
-
 resource "aws_eip" "nat" {
   count = "${length(var.azs)}"
   vpc   = true
@@ -42,18 +40,16 @@ resource "aws_internet_gateway" "kubernetes" {
   tags   = "${merge(local.common_tags, map())}"
 }
 
-variable "internet_gateway_id" {
-  default = "${aws_internet_gateway.kubernetes.id}"
-}
-
 resource "aws_nat_gateway" "kubernetes" {
   count         = "${length(var.azs)}"
   allocation_id = "${element(aws_eip.nat.*.id, count.index)}"
   subnet_id     = "${element(aws_subnet.public.*.id, count.index)}"
+  tags          = "${merge(local.common_tags, map())}"
   depends_on    = ["aws_subnet.public", "aws_internet_gateway.kubernetes"]
 }
 
-variable "nat_gateways" {
-  type="list"
-  default = ["${aws_nat_gateway.kubernetes.*.id}"]
+locals {
+  vpc_id = "${aws_vpc.kubernetes.id}"
+  internet_gateway_id = "${aws_internet_gateway.kubernetes.id}"
+  nat_gateways = ["${aws_nat_gateway.kubernetes.*.id}"]
 }
