@@ -3,20 +3,25 @@
 
 [[projects]]
   branch = "master"
+  digest = "1:a74730e052a45a3fab1d310fdef2ec17ae3d6af16228421e238320846f2aaec8"
   name = "github.com/alecthomas/template"
   packages = [
     ".",
-    "parse"
+    "parse",
   ]
+  pruneopts = ""
   revision = "a0175ee3bccc567396460bf5acd36800cb10c49c"
 
 [[projects]]
   branch = "master"
+  digest = "1:8483994d21404c8a1d489f6be756e25bfccd3b45d65821f25695577791a08e68"
   name = "github.com/alecthomas/units"
   packages = ["."]
+  pruneopts = ""
   revision = "2efee857e7cfd4f3d0138cc3cbb1b4966962b93a"
 
 [[projects]]
+  digest = "1:6960afc5acfff07b0297b36e5369bcf6d59625a13471056e173cea20fcdf35f7"
   name = "github.com/aws/aws-sdk-go"
   packages = [
     "aws",
@@ -50,97 +55,137 @@
     "private/protocol/xml/xmlutil",
     "service/ec2",
     "service/s3",
-    "service/sts"
+    "service/sts",
   ]
+  pruneopts = ""
   revision = "5e98666858b97db54a61044bb1150d3b81436860"
   version = "v1.14.16"
 
 [[projects]]
+  digest = "1:1f557d2b7814235704f63f15e5bd3d7a5d3be9d3f9e7bf74b411150df89886e6"
   name = "github.com/go-ini/ini"
   packages = ["."]
+  pruneopts = ""
   revision = "06f5f3d67269ccec1fe5fe4134ba6e982984f7f5"
   version = "v1.37.0"
 
 [[projects]]
+  digest = "1:508be8471be02ce69ed1e15ef7a6ef6d00fa808b068cef6d29cbaf998b5785cf"
   name = "github.com/gravitational/provisioner"
   packages = [
     ".",
-    "provider/awsutil"
+    "provider/awsutil",
   ]
+  pruneopts = ""
   revision = "017be81eb50ab606a84bb23a04566a72ae63bb0d"
   version = "0.1.0"
 
 [[projects]]
+  digest = "1:e14dc9ebc89ea557030d2f45553559c1753ae6a3b710d33f11c4e0392d9d5c81"
   name = "github.com/gravitational/trace"
   packages = ["."]
+  pruneopts = ""
   revision = "792b9868cdf9d499e09b47f167c553e786a0e235"
   version = "1.1.4"
 
 [[projects]]
+  digest = "1:6f49eae0c1e5dab1dafafee34b207aeb7a42303105960944828c2079b92fc88e"
   name = "github.com/jmespath/go-jmespath"
   packages = ["."]
+  pruneopts = ""
   revision = "0b12d6b5"
 
 [[projects]]
+  digest = "1:302ad9379eb146668760df4d779a95379acab43ce5f9a28f27f3273f98232020"
   name = "github.com/jonboulle/clockwork"
   packages = ["."]
+  pruneopts = ""
   revision = "2eee05ed794112d45db504eb05aa693efd2b8b09"
   version = "v0.1.0"
 
 [[projects]]
+  digest = "1:3108ec0946181c60040ff51b811908f89d03e521e2b4ade5ef5c65b3c0e911ae"
   name = "github.com/kr/pretty"
   packages = ["."]
+  pruneopts = ""
   revision = "73f6ac0b30a98e433b289500d779f50c1a6f0712"
   version = "v0.1.0"
 
 [[projects]]
+  digest = "1:11b056b4421396ab14e384ab8ab8c2079b03f1e51aa5eb4d9b81f9e0d1aa8fbf"
   name = "github.com/kr/text"
   packages = ["."]
+  pruneopts = ""
   revision = "e2ffdb16a802fe2bb95e2e35ff34f0e53aeef34f"
   version = "v0.1.0"
 
 [[projects]]
+  digest = "1:8cf46b6c18a91068d446e26b67512cf16f1540b45d90b28b9533706a127f0ca6"
   name = "github.com/sirupsen/logrus"
   packages = ["."]
+  pruneopts = ""
   revision = "c155da19408a8799da419ed3eeb0cb5db0ad5dbc"
   version = "v1.0.5"
 
 [[projects]]
   branch = "master"
+  digest = "1:7ac6c89335cdca86063465acc67ff283d9517a8ceec0da2f893a7a7ff5245e95"
   name = "golang.org/x/crypto"
   packages = ["ssh/terminal"]
+  pruneopts = ""
   revision = "a49355c7e3f8fe157a85be2f77e6e269a0f89602"
 
 [[projects]]
   branch = "master"
+  digest = "1:a143fd748b88512b9b7eb43e0ad5b92560d89dc596787438abe25d7e345b7362"
   name = "golang.org/x/net"
   packages = ["context"]
+  pruneopts = ""
   revision = "4cb1c02c05b0e749b0365f61ae859a8e0cfceed9"
 
 [[projects]]
   branch = "master"
+  digest = "1:57be0ee99ef4b53bbe8570e176f11f7c23c33d38d388079a2c1aeb3ba197b7ed"
   name = "golang.org/x/sys"
   packages = [
     "unix",
-    "windows"
+    "windows",
   ]
+  pruneopts = ""
   revision = "7138fd3d9dc8335c567ca206f4333fb75eb05d56"
 
 [[projects]]
+  digest = "1:7dc69d1597e4773ec5f64e5c078d55f0f011bb05ec0435346d0649ad978a23fd"
   name = "gopkg.in/alecthomas/kingpin.v2"
   packages = ["."]
+  pruneopts = ""
   revision = "947dcec5ba9c011838740e680966fd7087a71d0d"
   version = "v2.2.6"
 
 [[projects]]
   branch = "v1"
+  digest = "1:e75566abfb876e81f00290ec153ff994c33bf8886134c1a38a9a9df5c15a2045"
   name = "gopkg.in/check.v1"
   packages = ["."]
+  pruneopts = ""
   revision = "788fd78401277ebd861206a03c884797c6ec5541"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d1e362a0686522eaa6c7a47ed578c3e77d74345711d092c4b48e056b7a2307ef"
+  input-imports = [
+    "github.com/aws/aws-sdk-go/aws",
+    "github.com/aws/aws-sdk-go/aws/awserr",
+    "github.com/aws/aws-sdk-go/aws/request",
+    "github.com/aws/aws-sdk-go/aws/session",
+    "github.com/aws/aws-sdk-go/service/ec2",
+    "github.com/aws/aws-sdk-go/service/s3",
+    "github.com/gravitational/provisioner",
+    "github.com/gravitational/provisioner/provider/awsutil",
+    "github.com/gravitational/trace",
+    "github.com/sirupsen/logrus",
+    "gopkg.in/alecthomas/kingpin.v2",
+    "gopkg.in/check.v1",
+  ]
   solver-name = "gps-cdcl"
   solver-version = 1

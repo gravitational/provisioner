@@ -1,9 +1,10 @@
 package provisioner
 
 import (
+	"testing"
+
 	"gopkg.in/alecthomas/kingpin.v2"
 	. "gopkg.in/check.v1"
-	"testing"
 )
 
 // Hook up gocheck into the "go test" runner.
@@ -19,7 +20,6 @@ func (s *ProvisionerSuite) TestLoadCommand(c *C) {
 
 	command := LoadCommands(app, &cfg)
 	c.Assert(command.initVars, NotNil)
-	c.Assert(command.findInstance, NotNil)
 	c.Assert(command.syncFiles, NotNil)
 	c.Assert(command.removeS3Key, NotNil)
 }
