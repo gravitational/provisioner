@@ -1,8 +1,6 @@
 package provisioner
 
 import (
-	"fmt"
-
 	"github.com/gravitational/trace"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/alecthomas/kingpin.v2"
@@ -43,22 +41,6 @@ func (cmd *syncFilesCmd) perform(cfg LoaderConfig) error {
 	return loader.sync(cmd.paths, cmd.targetDir)
 }
 
-// findInstanceCmd groups the top-level command for finding instance by private ip and its arguments
-type findInstanceCmd struct {
-	*kingpin.CmdClause
-	findPrivateIP string
-}
-
-func (cmd *findInstanceCmd) perform(cfg LoaderConfig) error {
-	resource, err := findInstance(cmd.findPrivateIP, nil)
-	if err != nil {
-		return trace.Wrap(err)
-	}
-
-	fmt.Println(resource)
-	return nil
-}
-
 // removeS3KeyCmd groups the top-level command for removing S3 keys and its arguments
 type removeS3KeyCmd struct {
 	*kingpin.CmdClause
@@ -81,22 +63,11 @@ type CommandRunner interface {
 
 // Command wraps config kingpin, cfg and all command in same struct
 type Command struct {
-	App          *kingpin.Application
-	cfg          *LoaderConfig
-	initVars     *initVarsCmd
-	syncFiles    *syncFilesCmd
-	findInstance *findInstanceCmd
-	removeS3Key  *removeS3KeyCmd
-}
-
-// registerFindInstance define command and flags
-func (c *Command) registerFindInstance() {
-	// find-instance
-	findInstance := findInstanceCmd{}
-	findInstance.CmdClause = c.App.Command("find-instance", "Finds instance in terraform show output by private ip")
-	findInstance.Flag("private-ip", "Private IP").Required().StringVar(&findInstance.findPrivateIP)
-
-	c.findInstance = &findInstance
+	App         *kingpin.Application
+	cfg         *LoaderConfig
+	initVars    *initVarsCmd
+	syncFiles   *syncFilesCmd
+	removeS3Key *removeS3KeyCmd
 }
 
 // registerSyncFile define command and flags
@@ -147,7 +118,6 @@ func LoadCommands(app *kingpin.Application, cfg *LoaderConfig) *Command {
 	}
 
 	c.registerInitVars()
-	c.registerFindInstance()
 	c.registerSyncFile()
 	c.registerRemoveS3Key()
 
@@ -168,8 +138,6 @@ func (c *Command) Run(args []string) error {
 		err = c.initVars.perform(*c.cfg)
 	case c.syncFiles.FullCommand():
 		err = c.syncFiles.perform(*c.cfg)
-	case c.findInstance.FullCommand():
-		err = c.findInstance.perform(*c.cfg)
 	case c.removeS3Key.FullCommand():
 		err = c.removeS3Key.perform(*c.cfg)
 	}

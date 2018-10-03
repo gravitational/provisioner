@@ -2,7 +2,6 @@ package provisioner
 
 import (
 	"io/ioutil"
-	"os"
 
 	"github.com/gravitational/provisioner/provider/awsutil"
 	. "gopkg.in/check.v1"
@@ -53,12 +52,4 @@ func loadStubTemplate(c *C, path string) (out []byte) {
 	out, err := ioutil.ReadFile(path)
 	c.Assert(err, IsNil)
 	return out
-}
-
-func (s *ProvisionerSuite) TestFindPrivateIp(c *C) {
-	file, _ := os.Open("./fixture/terraform.show")
-	r, e := findInstance("1.2.3.4", file)
-
-	c.Assert(r, Equals, "aws_instance.foo[1]")
-	c.Assert(e, IsNil)
 }

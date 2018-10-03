@@ -1,16 +1,12 @@
 package provisioner
 
 import (
-	"bufio"
 	"bytes"
 	"context"
-	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
-	"regexp"
-	"strings"
 	"text/template"
 	"time"
 
@@ -471,47 +467,4 @@ func (l *Loader) rm(key string) error {
 		log.Printf("removed key s3://%v/%v", l.ClusterBucket, key)
 	}
 	return awsutil.ConvertS3Error(err, "failed to remove key %s", key)
-}
-
-// findInstance finds Terraform resource id for an EC2 instance from Terraform
-// output using instance private ip.
-//
-// Returns the instance from output of `terraform show` for the specified
-// private IP as `aws_instance.<instance-name>[counter]`
-//
-// A use case is we want to remove a specificed instance. If we simply change
-// count value in Terraform, we will not be sure which instance will be removed.
-// By mapping private ip and its associated Terraform resource id in
-//   `terraform show`
-// We can then remove exactly that instance by executing
-//   `terraform destroy --target=resource-id`
-func findInstance(privateIP string, stdin *os.File) (string, error) {
-	if privateIP == "" {
-		return "", trace.BadParameter("private ip can not be empty")
-	}
-
-	if stdin == nil {
-		stdin = os.Stdin
-	}
-
-	scanner := bufio.NewScanner(stdin)
-	var resourceName string
-	expr, err := regexp.Compile(fmt.Sprintf(`\s*private_ip\s*=\s*%v\s*`, privateIP))
-	if err != nil {
-		return "", trace.Wrap(err)
-	}
-	for scanner.Scan() {
-		line := strings.TrimSpace(scanner.Text())
-		if strings.HasPrefix(line, "aws_instance.") {
-			resourceName = strings.TrimSuffix(line, ":")
-			parts := strings.Split(resourceName, ".")
-			if len(parts) > 1 {
-				resourceName = strings.Join(parts[:len(parts)-1], ".") + "[" + parts[len(parts)-1] + "]"
-			}
-		} else if expr.MatchString(line) {
-			return resourceName, nil
-		}
-	}
-
-	return "", trace.NotFound("instance with ip %v not found", privateIP)
 }

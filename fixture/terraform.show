@@ -1,4 +1,0 @@
-aws_instance.foo.0
- private_ip = 1.2.3.5
-aws_instance.foo.1
- private_ip = 1.2.3.4

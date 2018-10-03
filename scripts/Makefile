@@ -194,14 +194,6 @@ terraform-init:
 			-backend-config='key=$(TELEKUBE_CLUSTER_NAME)/cluster.tfstate' \
 			--from-module='/mnt/state/cluster/input'
 
-.PHONY: terraform-remove-instance
-terraform-remove-instance:
-	cd /mnt/state/cluster && terraform show | inspect find-instance --private-ip=$(AWS_INSTANCE_PRIVATE_IP) > /mnt/state/cluster/instance-to-remove
-	export RESOURCE_NAME=$$(cat /mnt/state/cluster/instance-to-remove) &&  \
-	echo "going to remove instance: $$RESOURCE_NAME" && \
-	cd /mnt/state/cluster && \
-		terraform destroy $(TF_FLAGS) --force --target="$$RESOURCE_NAME"
-
 #
 # terraform-plan runs terraform plan on the cluster
 #
