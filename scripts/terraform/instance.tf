@@ -53,21 +53,11 @@ resource "aws_instance" "master" {
 }
 
 resource "aws_iam_instance_profile" "master" {
-  name       = "master-${var.cluster_name}"
-  role       = "${aws_iam_role.master.name}"
-  depends_on = ["aws_iam_role_policy.master"]
-
-  provisioner "local-exec" {
-    command = "sleep 30"
-  }
+  name = "master-${var.cluster_name}"
+  role = "${aws_iam_role.master.name}"
 }
 
 resource "aws_iam_instance_profile" "node" {
-  name       = "node-${var.cluster_name}"
-  role       = "${aws_iam_role.node.name}"
-  depends_on = ["aws_iam_role_policy.node"]
-
-  provisioner "local-exec" {
-    command = "sleep 30"
-  }
+  name = "node-${var.cluster_name}"
+  role = "${aws_iam_role.node.name}"
 }

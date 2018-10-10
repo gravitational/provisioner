@@ -1,6 +1,6 @@
 terraform {
   required_version = "~> 0.11.3"
-  backend "s3" {}
+  backend          "s3"             {}
 }
 
 provider "random" {
@@ -16,7 +16,7 @@ variable "aws_max_retries" {
 }
 
 provider "aws" {
-  version                 = "~> 1.38"
+  version                 = "1.40.0"
   region                  = "${var.aws_region}"
   shared_credentials_file = "/var/lib/telekube/aws-credentials"
   profile                 = "default"
