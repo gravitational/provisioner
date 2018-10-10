@@ -41,21 +41,6 @@ func (cmd *syncFilesCmd) perform(cfg LoaderConfig) error {
 	return loader.sync(cmd.paths, cmd.targetDir)
 }
 
-// removeS3KeyCmd groups the top-level command for removing S3 keys and its arguments
-type removeS3KeyCmd struct {
-	*kingpin.CmdClause
-	rmKey string
-}
-
-func (cmd *removeS3KeyCmd) perform(cfg LoaderConfig) error {
-	loader, err := NewLoader(cfg)
-	if err != nil {
-		return trace.Wrap(err)
-	}
-
-	return loader.rm(cmd.rmKey)
-}
-
 // CommandRunner is interface to our main entrypoint to the cli
 type CommandRunner interface {
 	Run(args []string) error
@@ -63,11 +48,10 @@ type CommandRunner interface {
 
 // Command wraps config kingpin, cfg and all command in same struct
 type Command struct {
-	App         *kingpin.Application
-	cfg         *LoaderConfig
-	initVars    *initVarsCmd
-	syncFiles   *syncFilesCmd
-	removeS3Key *removeS3KeyCmd
+	App       *kingpin.Application
+	cfg       *LoaderConfig
+	initVars  *initVarsCmd
+	syncFiles *syncFilesCmd
 }
 
 // registerSyncFile define command and flags
@@ -98,18 +82,6 @@ func (c *Command) registerInitVars() {
 	c.initVars = &cinitVars
 }
 
-// registerRemoveS3Key define command and flags
-func (c *Command) registerRemoveS3Key() {
-	crm := removeS3KeyCmd{}
-
-	crm.CmdClause = c.App.Command("rm", "Remove key from bucket")
-	crm.Flag("region", "AWS region to inspect").Required().StringVar(&c.cfg.Region)
-	crm.Flag("cluster-bucket", "Check bucket key for pre-stored value").StringVar(&c.cfg.ClusterBucket)
-	crm.Flag("key", "Bucket key to remove").Required().StringVar(&crm.rmKey)
-
-	c.removeS3Key = &crm
-}
-
 // LoadCommands initializes main CommandRunner
 func LoadCommands(app *kingpin.Application, cfg *LoaderConfig) *Command {
 	c := Command{
@@ -119,7 +91,6 @@ func LoadCommands(app *kingpin.Application, cfg *LoaderConfig) *Command {
 
 	c.registerInitVars()
 	c.registerSyncFile()
-	c.registerRemoveS3Key()
 
 	return &c
 }
@@ -138,8 +109,6 @@ func (c *Command) Run(args []string) error {
 		err = c.initVars.perform(*c.cfg)
 	case c.syncFiles.FullCommand():
 		err = c.syncFiles.perform(*c.cfg)
-	case c.removeS3Key.FullCommand():
-		err = c.removeS3Key.perform(*c.cfg)
 	}
 
 	if err != nil {

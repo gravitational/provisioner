@@ -21,5 +21,4 @@ func (s *ProvisionerSuite) TestLoadCommand(c *C) {
 	command := LoadCommands(app, &cfg)
 	c.Assert(command.initVars, NotNil)
 	c.Assert(command.syncFiles, NotNil)
-	c.Assert(command.removeS3Key, NotNil)
 }

@@ -453,18 +453,3 @@ func (l *Loader) sync(paths []string, targetDir string) error {
 	log.Debug("sync complete")
 	return nil
 }
-
-func (l *Loader) rm(key string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), AWSOperationTimeout)
-	defer cancel()
-
-	params := &s3.DeleteObjectInput{
-		Bucket: aws.String(l.ClusterBucket),
-		Key:    aws.String(key),
-	}
-	_, err := l.DeleteObjectWithContext(ctx, params)
-	if err == nil {
-		log.Printf("removed key s3://%v/%v", l.ClusterBucket, key)
-	}
-	return awsutil.ConvertS3Error(err, "failed to remove key %s", key)
-}
